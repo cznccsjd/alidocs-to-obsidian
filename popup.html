@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>保存到 Obsidian</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 14px;
+      background: #1e1e2e;
+      color: #cdd6f4;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid #313244;
+    }
+
+    .header-logo {
+      width: 28px;
+      height: 28px;
+      background: #7c3aed;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .header-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #cdd6f4;
+      flex: 1;
+    }
+
+    .header-settings {
+      cursor: pointer;
+      opacity: 0.6;
+      font-size: 16px;
+      padding: 4px;
+      border-radius: 4px;
+      transition: opacity 0.2s;
+    }
+
+    .header-settings:hover {
+      opacity: 1;
+      background: #313244;
+    }
+
+    .body {
+      padding: 14px 16px;
+    }
+
+    .page-info {
+      background: #181825;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+    }
+
+    .page-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: #cdd6f4;
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .page-url {
+      font-size: 11px;
+      color: #6c7086;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .site-badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      background: #313244;
+      color: #89b4fa;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .field-group {
+      margin-bottom: 12px;
+    }
+
+    .field-label {
+      font-size: 11px;
+      color: #6c7086;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .field-input {
+      width: 100%;
+      background: #181825;
+      border: 1px solid #313244;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 13px;
+      color: #cdd6f4;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .field-input:focus {
+      border-color: #7c3aed;
+    }
+
+    .field-input::placeholder {
+      color: #585b70;
+    }
+
+    .tags-input {
+      font-family: inherit;
+    }
+
+    .btn-save {
+      width: 100%;
+      padding: 10px;
+      background: #7c3aed;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-save:hover:not(:disabled) {
+      background: #6d28d9;
+    }
+
+    .btn-save:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn-save:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.4;
+      display: none;
+    }
+
+    .status.success {
+      background: #1e3a2f;
+      border: 1px solid #40a070;
+      color: #a6e3a1;
+      display: block;
+    }
+
+    .status.error {
+      background: #3a1e1e;
+      border: 1px solid #a05040;
+      color: #f38ba8;
+      display: block;
+    }
+
+    .status.info {
+      background: #1e2a3a;
+      border: 1px solid #4070a0;
+      color: #89b4fa;
+      display: block;
+    }
+
+    .progress-steps {
+      margin-top: 10px;
+      display: none;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      font-size: 11px;
+      color: #6c7086;
+    }
+
+    .step.active {
+      color: #cdd6f4;
+    }
+
+    .step.done {
+      color: #a6e3a1;
+    }
+
+    .step.failed {
+      color: #f38ba8;
+    }
+
+    .step-icon {
+      width: 16px;
+      text-align: center;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid #585b70;
+      border-top-color: #89b4fa;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .no-api-key {
+      padding: 20px 16px;
+      text-align: center;
+      color: #6c7086;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .no-api-key a {
+      color: #89b4fa;
+      text-decoration: none;
+    }
+
+    .no-api-key a:hover {
+      text-decoration: underline;
+    }
+
+    .footer {
+      padding: 8px 16px;
+      border-top: 1px solid #181825;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .conn-indicator {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: #6c7086;
+    }
+
+    .conn-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #6c7086;
+    }
+
+    .conn-dot.connected {
+      background: #a6e3a1;
+    }
+
+    .conn-dot.disconnected {
+      background: #f38ba8;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-logo">📝</div>
+    <div class="header-title">保存到 Obsidian</div>
+    <div class="header-settings" id="btnSettings" title="设置">⚙️</div>
+  </div>
+
+  <!-- No API key state -->
+  <div class="no-api-key" id="noApiKey" style="display:none">
+    <p>请先配置 Obsidian Local REST API 密钥</p>
+    <br>
+    <p><a href="#" id="openOptions">打开设置 →</a></p>
+  </div>
+
+  <!-- Main UI -->
+  <div class="body" id="mainBody">
+    <!-- Page info -->
+    <div class="page-info">
+      <div class="site-badge" id="siteBadge">generic</div>
+      <div class="page-title" id="pageTitle">加载中...</div>
+      <div class="page-url" id="pageUrl"></div>
+    </div>
+
+    <!-- Save folder -->
+    <div class="field-group">
+      <div class="field-label">保存位置</div>
+      <input type="text" class="field-input" id="saveFolder" placeholder="Clippings">
+    </div>
+
+    <!-- Custom title -->
+    <div class="field-group">
+      <div class="field-label">文件名（不含.md）</div>
+      <input type="text" class="field-input" id="customTitle" placeholder="留空使用页面标题">
+    </div>
+
+    <!-- Tags -->
+    <div class="field-group">
+      <div class="field-label">标签（逗号分隔）</div>
+      <input type="text" class="field-input tags-input" id="tagsInput" placeholder="clipping, 阅读">
+    </div>
+
+    <!-- Save button -->
+    <button class="btn-save" id="btnSave">
+      <span id="btnIcon">💾</span>
+      <span id="btnText">保存到 Obsidian</span>
+    </button>
+
+    <!-- Progress -->
+    <div class="progress-steps" id="progressSteps">
+      <div class="step" id="step1"><span class="step-icon">⬜</span> 提取页面内容</div>
+      <div class="step" id="step2"><span class="step-icon">⬜</span> 下载图片</div>
+      <div class="step" id="step3"><span class="step-icon">⬜</span> 保存到 Obsidian</div>
+    </div>
+
+    <!-- Status -->
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="footer">
+    <div class="conn-indicator">
+      <div class="conn-dot" id="connDot"></div>
+      <span id="connText">检测连接中...</span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

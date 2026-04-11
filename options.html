@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Obsidian Web Clipper - 设置</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+      font-size: 14px;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      min-height: 100vh;
+      padding: 40px 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .header-logo {
+      width: 40px;
+      height: 40px;
+      background: #7c3aed;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .header-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #cdd6f4;
+    }
+
+    .header-subtitle {
+      font-size: 13px;
+      color: #6c7086;
+      margin-top: 2px;
+    }
+
+    .card {
+      background: #181825;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid #313244;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #cdd6f4;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .field-group {
+      margin-bottom: 18px;
+    }
+
+    .field-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .field-label {
+      font-size: 12px;
+      color: #6c7086;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 500;
+    }
+
+    .field-input {
+      width: 100%;
+      background: #1e1e2e;
+      border: 1px solid #313244;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 13px;
+      color: #cdd6f4;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+
+    .field-input:focus {
+      border-color: #7c3aed;
+    }
+
+    .field-input::placeholder {
+      color: #45475a;
+    }
+
+    .field-help {
+      font-size: 11px;
+      color: #585b70;
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    .field-help a {
+      color: #89b4fa;
+      text-decoration: none;
+    }
+
+    .field-help a:hover {
+      text-decoration: underline;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+    }
+
+    .toggle-label {
+      font-size: 13px;
+      color: #cdd6f4;
+    }
+
+    .toggle-sublabel {
+      font-size: 11px;
+      color: #6c7086;
+      margin-top: 2px;
+    }
+
+    .toggle {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #313244;
+      border-radius: 22px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 3px;
+      top: 3px;
+      background: #6c7086;
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .toggle input:checked + .toggle-slider {
+      background: #7c3aed;
+    }
+
+    .toggle input:checked + .toggle-slider::before {
+      transform: translateX(18px);
+      background: white;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      padding: 9px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: #7c3aed;
+      color: white;
+      flex: 1;
+    }
+
+    .btn-primary:hover {
+      background: #6d28d9;
+    }
+
+    .btn-secondary {
+      background: #313244;
+      color: #cdd6f4;
+    }
+
+    .btn-secondary:hover {
+      background: #45475a;
+    }
+
+    .status-bar {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-top: 14px;
+      display: none;
+    }
+
+    .status-bar.success {
+      background: #1e3a2f;
+      border: 1px solid #40a070;
+      color: #a6e3a1;
+      display: block;
+    }
+
+    .status-bar.error {
+      background: #3a1e1e;
+      border: 1px solid #a05040;
+      color: #f38ba8;
+      display: block;
+    }
+
+    .test-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-top: 12px;
+    }
+
+    .test-result {
+      flex: 1;
+      font-size: 12px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      background: #1e1e2e;
+      border: 1px solid #313244;
+      color: #6c7086;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+    }
+
+    .test-result.success { color: #a6e3a1; border-color: #40a070; }
+    .test-result.error { color: #f38ba8; border-color: #a05040; }
+
+    code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      background: #1e1e2e;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #cba6f7;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #313244;
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-logo">📝</div>
+      <div>
+        <div class="header-title">Obsidian Web Clipper</div>
+        <div class="header-subtitle">将网页内容保存到 Obsidian，保留完整格式</div>
+      </div>
+    </div>
+
+    <!-- Obsidian Connection -->
+    <div class="card">
+      <div class="card-title">🔌 Obsidian 连接设置</div>
+
+      <div class="field-group">
+        <div class="field-label">Local REST API 密钥</div>
+        <input type="password" class="field-input" id="apiKey" placeholder="粘贴你的 API Key 到这里">
+        <div class="field-help">
+          在 Obsidian → 设置 → Community Plugins → Local REST API 中找到 API Key。
+          确保插件已启用。
+        </div>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">端口</div>
+        <input type="number" class="field-input" id="port" placeholder="27123" value="27123" style="width: 120px">
+        <div class="field-help">默认端口 <code>27123</code>，无需修改</div>
+      </div>
+
+      <div class="test-row">
+        <button class="btn btn-secondary" id="btnTest">测试连接</button>
+        <div class="test-result" id="testResult">点击"测试连接"验证</div>
+      </div>
+    </div>
+
+    <!-- Save Settings -->
+    <div class="card">
+      <div class="card-title">📁 保存设置</div>
+
+      <div class="field-group">
+        <div class="field-label">默认保存文件夹</div>
+        <input type="text" class="field-input" id="saveFolder" placeholder="Clippings">
+        <div class="field-help">
+          在 Obsidian Vault 内的文件夹路径。例如：<code>Clippings</code> 或 <code>Inbox/网页</code>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">图片附件文件夹</div>
+        <input type="text" class="field-input" id="attachmentsFolder" placeholder="Clippings/attachments">
+        <div class="field-help">
+          下载的图片保存位置。例如：<code>Clippings/attachments</code> 或 <code>Resources</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- Note Options -->
+    <div class="card">
+      <div class="card-title">📋 笔记选项</div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">添加 Frontmatter</div>
+          <div class="toggle-sublabel">自动添加 YAML 元数据（标题、来源、日期）</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="addFrontmatter">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <hr>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">添加创建日期</div>
+          <div class="toggle-sublabel">在 Frontmatter 中记录保存时间</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="addCreatedDate">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="btnReset">恢复默认</button>
+      <button class="btn btn-primary" id="btnSave">保存设置</button>
+    </div>
+
+    <div class="status-bar" id="statusBar"></div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

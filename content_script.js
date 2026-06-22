@@ -461,18 +461,13 @@
   }
 
   async function fetchImageAsBase64(src) {
-    const resp = await fetch(src, {
-      credentials: 'include',
-      headers: { 'Referer': location.href },
+    const resp = await chrome.runtime.sendMessage({
+      action: 'fetchImage',
+      src,
+      referer: location.href,
     });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const blob = await resp.blob();
-    const reader = new FileReader();
-    return new Promise((resolve, reject) => {
-      reader.onload = () => resolve({ dataUrl: reader.result, mimeType: blob.type });
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    if (!resp || !resp.success) throw new Error(resp?.error || 'fetchImage failed');
+    return { dataUrl: resp.dataUrl, mimeType: resp.mimeType };
   }
 
   async function fetchAllImages(images) {

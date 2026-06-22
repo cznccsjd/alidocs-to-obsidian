@@ -303,13 +303,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function fetchImageForContent(src, referer) {
-  const resp = await fetch(src, {
-    headers: referer ? { 'Referer': referer } : {},
-  });
+  // Collect cookies for the image CDN domain and the page domain
+  let cookieHeader = '';
+  try {
+    const imgUrl = new URL(src);
+    const refererUrl = referer ? new URL(referer) : null;
+
+    // Gather all relevant domains: image host, page host, and their parent domains
+    const domains = new Set();
+    for (const u of [imgUrl, refererUrl].filter(Boolean)) {
+      const parts = u.hostname.split('.');
+      for (let i = 0; i < parts.length - 1; i++) {
+        domains.add(parts.slice(i).join('.'));
+      }
+    }
+
+    const cookies = [];
+    for (const domain of domains) {
+      try {
+        const c = await chrome.cookies.getAll({ domain });
+        cookies.push(...c);
+      } catch { /* domain not accessible */ }
+    }
+
+    if (cookies.length > 0) {
+      cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+    }
+  } catch { /* cookie gathering failed, proceed without */ }
+
+  const headers = {};
+  if (referer) headers['Referer'] = referer;
+  if (cookieHeader) headers['Cookie'] = cookieHeader;
+
+  const resp = await fetch(src, { headers });
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   const blob = await resp.blob();
-  const reader = new FileReader();
   return new Promise((resolve, reject) => {
+    const reader = new FileReader();
     reader.onload = () => resolve({ success: true, dataUrl: reader.result, mimeType: blob.type });
     reader.onerror = reject;
     reader.readAsDataURL(blob);

@@ -67,9 +67,15 @@ function getExt(mime, src) {
 
 // ─── Process Images ───────────────────────────────────────────────────────────
 
-async function processImages(fetchedImages, settings) {
-  const imageMap = {}; // original src → obsidian wiki path
+async function processImages(fetchedImages, settings, attachmentsFolderOverride, noteFolder) {
+  const imageMap = {}; // original src → obsidian wiki path (relative to note)
   const results = [];
+  const attachmentsFolder = attachmentsFolderOverride || settings.attachmentsFolder || 'Clippings/attachments';
+
+  // Compute relative prefix for image links (e.g., "attachments/" instead of "folder/attachments/")
+  const relPrefix = (noteFolder && attachmentsFolder.startsWith(noteFolder + '/'))
+    ? attachmentsFolder.substring(noteFolder.length + 1)
+    : null;
 
   for (const img of fetchedImages) {
     if (!img.success || !img.dataUrl) {
@@ -83,12 +89,13 @@ async function processImages(fetchedImages, settings) {
       const timestamp = Date.now();
       const safeAlt = img.alt.replace(/[^a-zA-Z0-9\u4e00-\u9fff\-_.]/g, '_').substring(0, 40);
       const filename = `${safeAlt}_${timestamp}_${img.index}.${ext}`;
-      const attachPath = `${settings.attachmentsFolder}/${filename}`;
+      const attachPath = `${attachmentsFolder}/${filename}`;
 
       await obsidianPut(attachPath, buffer, img.mimeType || mime, settings.apiKey, settings.port);
 
-      // Store the wiki link path (without [[ ]])
-      imageMap[img.src] = attachPath;
+      // Use relative path from note for wiki links (e.g., "attachments/img.png" instead of full vault path)
+      const wikiPath = relPrefix ? `${relPrefix}/${filename}` : attachPath;
+      imageMap[img.src] = wikiPath;
       results.push({ src: img.src, filename, success: true });
     } catch (err) {
       results.push({ src: img.src, success: false, error: err.message });
@@ -183,13 +190,19 @@ async function handleClip(tabId, options = {}) {
 
   const { title, url, site, markdown: initialMd, fetchedImages = [] } = extractResult;
 
-  // Step 2: Write images to Obsidian attachments folder
+  // Determine save folder (user-specified or default)
+  const folder = options.folder || settings.saveFolder || 'Clippings';
+
+  // Step 2: Write images to Obsidian — use {folder}/attachments
   let finalMd = initialMd;
   let imageResults = [];
+  const attachmentsFolder = (options.folder && options.folder !== settings.saveFolder)
+    ? `${folder}/attachments`
+    : (settings.attachmentsFolder || 'Clippings/attachments');
 
   if (fetchedImages.length > 0) {
     try {
-      const { imageMap, results } = await processImages(fetchedImages, settings);
+      const { imageMap, results } = await processImages(fetchedImages, settings, attachmentsFolder, folder);
       imageResults = results;
 
       if (Object.keys(imageMap).length > 0) {
@@ -208,9 +221,8 @@ async function handleClip(tabId, options = {}) {
   const header = `# ${options.customTitle || title}\n\n> **来源：** [${url}](${url})\n\n---\n\n`;
   const fullContent = frontmatter + header + finalMd;
 
-  // Step 4: Save to Obsidian
+  // Step 4: Save note to Obsidian
   const filename = safeFilename(options.customTitle || title) + '.md';
-  const folder = options.folder || settings.saveFolder || 'Clippings';
   const filePath = `${folder}/${filename}`;
 
   try {
@@ -280,5 +292,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.action === 'fetchImage') {
+    fetchImageForContent(message.src, message.referer)
+      .then(sendResponse)
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
   return false;
 });
+
+async function fetchImageForContent(src, referer) {
+  const resp = await fetch(src, {
+    headers: referer ? { 'Referer': referer } : {},
+  });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const blob = await resp.blob();
+  const reader = new FileReader();
+  return new Promise((resolve, reject) => {
+    reader.onload = () => resolve({ success: true, dataUrl: reader.result, mimeType: blob.type });
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}

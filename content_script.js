@@ -413,10 +413,22 @@
 
   // ─── Image Collection & Fetch ────────────────────────────────────────────
 
+  function normalizeSrcForDedup(src) {
+    // Strip OSS/CDN auth query params to deduplicate the same image with different signed URLs
+    try {
+      const u = new URL(src, location.href);
+      // Drop time-limited auth params common in AliCloud OSS and similar CDNs
+      ['Expires', 'Signature', 'auth_key', 'OSSAccessKeyId', 'x-oss-process'].forEach(p => u.searchParams.delete(p));
+      return u.href;
+    } catch {
+      return src.split('?')[0]; // fallback: strip all query params
+    }
+  }
+
   function collectImages(blocks) {
     const images = [];
-    const seenSrc = new Set(); // for download dedup only (same URL → download once)
-    const srcToLocalIndex = {}; // src → index in images array (for wiki-link ref)
+    const seenSrc = new Set(); // normalized URL → already collected (dedup)
+    const srcToLocalIndex = {}; // original src → index in images array (for wiki-link ref)
 
     for (const { el } of blocks) {
       const imgs = el.tagName === 'IMG' ? [el] : Array.from(el.querySelectorAll('img'));
@@ -434,8 +446,9 @@
         const nH = img.naturalHeight || 0;
         if (nW > 0 && nW < 40 && nH > 0 && nH < 40) continue;
 
-        if (seenSrc.has(src)) continue;
-        seenSrc.add(src);
+        const dedupKey = normalizeSrcForDedup(src);
+        if (seenSrc.has(dedupKey)) continue;
+        seenSrc.add(dedupKey);
 
         const safeAlt = (img.alt || `img_${images.length}`)
           .replace(/[/\\:*?"<>|]/g, '_').substring(0, 60);
@@ -448,20 +461,13 @@
   }
 
   async function fetchImageAsBase64(src) {
-    // Must fetch from page context to include AliDocs auth cookies
-    const resp = await fetch(src, {
-      credentials: 'include',
-      mode: 'cors',
-      headers: { 'Referer': location.href },
+    const resp = await chrome.runtime.sendMessage({
+      action: 'fetchImage',
+      src,
+      referer: location.href,
     });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const blob = await resp.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve({ dataUrl: reader.result, mimeType: blob.type });
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    if (!resp || !resp.success) throw new Error(resp?.error || 'fetchImage failed');
+    return { dataUrl: resp.dataUrl, mimeType: resp.mimeType };
   }
 
   async function fetchAllImages(images) {
@@ -556,14 +562,33 @@
 
     // Generic fallback
     const contentEl = extractGenericContent();
-    const images = Array.from(contentEl.querySelectorAll('img'))
-      .filter(img => img.src && img.naturalWidth > 40)
-      .map((img, i) => ({ src: img.src, alt: (img.alt || `img_${i}`).replace(/[/\\:*?"<>|]/g, '_').substring(0, 60), index: i, dataUrl: null, mimeType: null, success: false }));
+    const allImgs = Array.from(contentEl.querySelectorAll('img'));
+    const seenSrc = new Set();
+    const imageObjects = [];
+    allImgs.forEach((img, i) => {
+      const src = img.src || img.dataset.src || img.getAttribute('data-original') || '';
+      if (!src || src.startsWith('data:image/gif')) return;
+      const nW = img.naturalWidth || 0, nH = img.naturalHeight || 0;
+      if (nW > 0 && nW < 40 && nH > 0 && nH < 40) return;
+      const dispW = img.width || img.offsetWidth || 0, dispH = img.height || img.offsetHeight || 0;
+      if (dispW > 0 && dispH > 0 && dispW < 32 && dispH < 32) return;
+      if (seenSrc.has(src)) return;
+      seenSrc.add(src);
+      const safeAlt = (img.alt || `img_${i}`).replace(/[/\\:*?"<>|]/g, '_').substring(0, 60);
+      imageObjects.push({ src, alt: safeAlt, index: imageObjects.length });
+    });
+
+    const fetchedImages = await fetchAllImages(imageObjects);
 
     return {
       success: true, title, url, site,
       markdown: genericToMd(contentEl, {}),
-      fetchedImages: images,
+      fetchedImages: fetchedImages.map(img => ({
+        src: img.src, alt: img.alt, index: img.index,
+        dataUrl: img.success ? img.dataUrl : null,
+        mimeType: img.success ? img.mimeType : null,
+        success: img.success, error: img.error,
+      })),
     };
   }
 

@@ -309,22 +309,39 @@ async function fetchImageForContent(src, referer) {
     const imgUrl = new URL(src);
     const refererUrl = referer ? new URL(referer) : null;
 
-    // Gather all relevant domains: image host, page host, and their parent domains
+    // Gather all relevant domains: full hostnames and parent domains (with and without leading dot)
+    // chrome.cookies.getAll matches: exact domain (no dot) OR domain+subdomains (leading dot)
     const domains = new Set();
     for (const u of [imgUrl, refererUrl].filter(Boolean)) {
+      domains.add(u.hostname);
       const parts = u.hostname.split('.');
-      for (let i = 0; i < parts.length - 1; i++) {
-        domains.add(parts.slice(i).join('.'));
+      for (let i = 1; i < parts.length; i++) {
+        const parent = parts.slice(i).join('.');
+        domains.add(parent);
+        domains.add('.' + parent); // domain cookies (e.g., .dingtalk.com)
       }
     }
 
-    const cookies = [];
+    // Merge cookies from domain-based queries and url-based query
+    const cookieMap = new Map(); // keyed by name+domain+path to dedup
+    const addCookies = (list) => {
+      for (const c of list) {
+        const key = `${c.name}|${c.domain}|${c.path}`;
+        if (!cookieMap.has(key)) cookieMap.set(key, c);
+      }
+    };
+
     for (const domain of domains) {
       try {
-        const c = await chrome.cookies.getAll({ domain });
-        cookies.push(...c);
+        addCookies(await chrome.cookies.getAll({ domain }));
       } catch { /* domain not accessible */ }
     }
+    // Also query by image URL to catch path-scoped cookies
+    try {
+      addCookies(await chrome.cookies.getAll({ url: src }));
+    } catch { /* url query failed */ }
+
+    const cookies = [...cookieMap.values()];
 
     if (cookies.length > 0) {
       cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');

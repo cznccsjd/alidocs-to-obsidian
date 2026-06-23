@@ -202,11 +202,14 @@ async function handleClip(tabId, options = {}) {
 
   if (fetchedImages.length > 0) {
     try {
-      // Download any images that don't have base64 data (e.g., from API extraction)
+      // Ask content script to download each image via XHR (has page cookies)
       for (const img of fetchedImages) {
         if (!img.dataUrl && img.src && img.src.startsWith('http')) {
           try {
-            const fetched = await fetchImageForContent(img.src, url);
+            const fetched = await chrome.tabs.sendMessage(tabId, {
+              action: 'xhrFetchImage',
+              src: img.src,
+            });
             img.dataUrl = fetched.dataUrl;
             img.mimeType = fetched.mimeType;
             img.success = true;

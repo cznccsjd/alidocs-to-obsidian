@@ -1047,6 +1047,12 @@
       }
       return true;
     }
+    if (message.action === 'xhrFetchImage') {
+      fetchImageAsBase64(message.src)
+        .then(data => sendResponse({ success: true, dataUrl: data.dataUrl, mimeType: data.mimeType }))
+        .catch(err => sendResponse({ success: false, error: err.message }));
+      return true;
+    }
     return false;
   });
 

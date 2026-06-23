@@ -124,31 +124,32 @@
       'pre',
     ].join(',');
 
-    let totalSeenInScroll = 0; // how many elements querySelectorAll returned (before filters)
+    let totalSeenInScroll = 0;
     let totalPassedFilters = 0;
     let totalDeduped = 0;
+    // Per-filter rejection counters
+    const filterStats = { tableInternal: 0, imgInListId: 0, listIdWrapsHeading: 0, headingInListId: 0, smallIcon: 0, emptyTextAndSrc: 0, deduped: 0 };
+    // Per-step [data-listid] census
+    const perStepListIdCounts = [];
 
     function captureFrame() {
       const allEls = iDoc.querySelectorAll(SELECTOR);
       totalSeenInScroll += allEls.length;
 
-      allEls.forEach(el => {
-        // Skip table internals (cells, rows)
-        if (el.tagName !== 'TABLE' && el.closest('table')) return;
-        // Skip images that are inside [data-listid] – they'll be inlined via inlineToMd
-        if (el.tagName === 'IMG' && el.closest('[data-listid]')) return;
-        // Skip [data-listid] that directly wraps a heading
-        if (el.hasAttribute('data-listid') &&
-            el.querySelector(':scope > * > h1, :scope > * > h2, :scope > * > h3, :scope > * > h4, :scope > * > h5, :scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > h5')) return;
-        // Skip headings that live inside a [data-listid]
-        if (/^H[1-6]$/.test(el.tagName) && el.closest('[data-listid]')) return;
+      // Count [data-listid] elements currently in the DOM at this scroll position
+      perStepListIdCounts.push(iDoc.querySelectorAll('[data-listid]').length);
 
-        // For images: skip decorative icons (display size too small)
+      allEls.forEach(el => {
+        if (el.tagName !== 'TABLE' && el.closest('table')) { filterStats.tableInternal++; return; }
+        if (el.tagName === 'IMG' && el.closest('[data-listid]')) { filterStats.imgInListId++; return; }
+        if (el.hasAttribute('data-listid') &&
+            el.querySelector(':scope > * > h1, :scope > * > h2, :scope > * > h3, :scope > * > h4, :scope > * > h5, :scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > h5')) { filterStats.listIdWrapsHeading++; return; }
+        if (/^H[1-6]$/.test(el.tagName) && el.closest('[data-listid]')) { filterStats.headingInListId++; return; }
+
         if (el.tagName === 'IMG') {
           const dispW = el.width || el.offsetWidth || 0;
           const dispH = el.height || el.offsetHeight || 0;
-          // If BOTH display dimensions are known and both are tiny → icon, skip
-          if (dispW > 0 && dispH > 0 && dispW < 32 && dispH < 32) return;
+          if (dispW > 0 && dispH > 0 && dispW < 32 && dispH < 32) { filterStats.smallIcon++; return; }
         }
 
         const text = (el.innerText || '').trim();
@@ -156,14 +157,14 @@
           ? (el.src || el.dataset.src || el.getAttribute('data-original') || '')
           : '';
 
-        if (!text && !src) return;
+        if (!text && !src) { filterStats.emptyTextAndSrc++; return; }
 
         totalPassedFilters++;
         const rect = el.getBoundingClientRect();
         const absTop = scrollEl.scrollTop + rect.top;
         const key = dedupKey(el, absTop);
 
-        if (seen.has(key)) { totalDeduped++; return; }
+        if (seen.has(key)) { totalDeduped++; filterStats.deduped++; return; }
         seen.set(key, { el, absTop });
       });
     }
@@ -208,6 +209,11 @@
     console.log('[diag] total elements seen (all scroll pos):', totalSeenInScroll);
     console.log('[diag] passed filters:', totalPassedFilters);
     console.log('[diag] deduped (skipped):', totalDeduped);
+    console.log('[diag] filter rejection breakdown:', JSON.stringify(filterStats));
+    console.log('[diag] [data-listid] count per scroll step (min/max/avg):',
+      Math.min(...perStepListIdCounts), '/', Math.max(...perStepListIdCounts), '/',
+      (perStepListIdCounts.reduce((a,b)=>a+b,0) / perStepListIdCounts.length).toFixed(1));
+    console.log('[diag] [data-listid] per-step counts:', perStepListIdCounts);
     console.log('[diag] unique blocks captured:', blocks.length, '→ by tag:', JSON.stringify(byTag));
     console.log('[diag] total text chars in blocks:', totalTextChars);
 

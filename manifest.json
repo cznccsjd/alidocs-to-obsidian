@@ -44,5 +44,11 @@
     "http://localhost:27123/*",
     "https://localhost:27124/*",
     "<all_urls>"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["probe.js"],
+      "matches": ["https://alidocs.dingtalk.com/*", "https://docs.dingtalk.com/*"]
+    }
   ]
 }

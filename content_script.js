@@ -124,8 +124,15 @@
       'pre',
     ].join(',');
 
+    let totalSeenInScroll = 0; // how many elements querySelectorAll returned (before filters)
+    let totalPassedFilters = 0;
+    let totalDeduped = 0;
+
     function captureFrame() {
-      iDoc.querySelectorAll(SELECTOR).forEach(el => {
+      const allEls = iDoc.querySelectorAll(SELECTOR);
+      totalSeenInScroll += allEls.length;
+
+      allEls.forEach(el => {
         // Skip table internals (cells, rows)
         if (el.tagName !== 'TABLE' && el.closest('table')) return;
         // Skip images that are inside [data-listid] – they'll be inlined via inlineToMd
@@ -151,11 +158,12 @@
 
         if (!text && !src) return;
 
+        totalPassedFilters++;
         const rect = el.getBoundingClientRect();
         const absTop = scrollEl.scrollTop + rect.top;
         const key = dedupKey(el, absTop);
 
-        if (seen.has(key)) return;
+        if (seen.has(key)) { totalDeduped++; return; }
         seen.set(key, { el, absTop });
       });
     }
@@ -187,6 +195,33 @@
 
     // Sort by vertical position to maintain reading order
     const blocks = [...seen.values()].sort((a, b) => a.absTop - b.absTop);
+
+    // ── Diagnostic ──
+    const byTag = {};
+    let totalTextChars = 0;
+    for (const b of blocks) {
+      const t = b.el.tagName.toLowerCase();
+      byTag[t] = (byTag[t] || 0) + 1;
+      if (t !== 'img') totalTextChars += (b.el.innerText || '').length;
+    }
+    console.log('[diag] scroll steps:', iter - 1);
+    console.log('[diag] total elements seen (all scroll pos):', totalSeenInScroll);
+    console.log('[diag] passed filters:', totalPassedFilters);
+    console.log('[diag] deduped (skipped):', totalDeduped);
+    console.log('[diag] unique blocks captured:', blocks.length, '→ by tag:', JSON.stringify(byTag));
+    console.log('[diag] total text chars in blocks:', totalTextChars);
+    for (const [tag, count] of Object.entries(byTag).sort()) {
+      const sample = blocks.find(b => b.el.tagName.toLowerCase() === tag && (b.el.innerText || '').trim());
+      if (sample) console.log(`[diag]   ${tag} x${count}  sample text: "${(sample.el.innerText || '').trim().substring(0, 100)}"`);
+    }
+    // Also dump all non-IMG blocks' text preview
+    const textBlocks = blocks.filter(b => b.el.tagName !== 'IMG');
+    console.log('[diag] non-IMG blocks text previews:');
+    textBlocks.forEach((b, i) => {
+      const t = (b.el.innerText || '').trim();
+      if (t) console.log(`[diag]   [${i}] <${b.el.tagName.toLowerCase()}> "${t.substring(0, 120)}"`);
+    });
+
     return { blocks, iDoc };
   }
 

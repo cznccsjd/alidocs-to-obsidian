@@ -664,22 +664,25 @@
     if (!content) throw new Error('No checkpoint content in API response');
 
     const doc = JSON.parse(content);
-    if (!doc.body || !Array.isArray(doc.body)) {
+
+    // Document uses parts-based structure: doc.parts[doc.main].data.body
+    let body;
+    if (doc.main && doc.parts && doc.parts[doc.main]) {
+      body = doc.parts[doc.main].data?.body;
+    }
+    // Fallback: direct body array (older format)
+    if (!body && Array.isArray(doc.body)) body = doc.body;
+
+    if (!body || !Array.isArray(body)) {
       console.log('[api-extract] doc keys:', Object.keys(doc));
-      console.log('[api-extract] body type:', typeof doc.body);
-      throw new Error('Unexpected body structure: body is not an array');
+      console.log('[api-extract] body type:', typeof body, 'main:', doc.main);
+      throw new Error('Unexpected body structure');
     }
 
-    console.log('[api-extract] body length:', doc.body.length,
-      'body[0]:', typeof doc.body[0], JSON.stringify(doc.body[0]).substring(0, 80),
-      'body[1]:', typeof doc.body[1], JSON.stringify(doc.body[1]).substring(0, 80),
-      'body[2]:', typeof doc.body[2],
-      Array.isArray(doc.body[2]) ? 'isArray(len=' + doc.body[2].length + ')' : 'NOT array');
-
     // body[0]="root", body[1]={sectPr...}, body[2]=[...blocks]
-    const blocks = doc.body[2];
+    const blocks = body[2];
     if (!Array.isArray(blocks)) throw new Error('No blocks array at body[2]');
-    console.log('[api-extract] blocks count:', blocks.length);
+    console.log('[api-extract] blocks:', blocks.length);
     return { blocks, doc };
   }
 

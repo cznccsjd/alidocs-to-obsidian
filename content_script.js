@@ -632,8 +632,15 @@
   const ALIDOCS_API = 'https://alidocs.dingtalk.com/api/document/data';
 
   function getDentryKey() {
-    const m = location.href.match(/[?&]dentryKey=([^&]+)/);
-    return m ? m[1] : '';
+    // dentryKey is in the iframe URL, not the top-level page URL
+    let m = location.href.match(/[?&]dentryKey=([^&]+)/);
+    if (m) return m[1];
+    const iframe = document.getElementById('wiki-doc-iframe');
+    if (iframe && iframe.src) {
+      m = iframe.src.match(/[?&]dentryKey=([^&]+)/);
+      if (m) return m[1];
+    }
+    return '';
   }
 
   async function fetchAlidocsApi() {

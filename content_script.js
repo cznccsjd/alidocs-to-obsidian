@@ -627,6 +627,202 @@
     return cleanTitle(document.title);
   }
 
+  // ─── AliDocs API-Based Extraction ───────────────────────────────────────
+
+  const ALIDOCS_API = 'https://alidocs.dingtalk.com/api/document/data';
+
+  function getDentryKey() {
+    const m = location.href.match(/[?&]dentryKey=([^&]+)/);
+    return m ? m[1] : '';
+  }
+
+  async function fetchAlidocsApi() {
+    const dentryKey = getDentryKey();
+    if (!dentryKey) throw new Error('Cannot find dentryKey in URL');
+
+    const resp = await fetch(ALIDOCS_API, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'content-type': 'application/json',
+        'a-dentry-key': dentryKey,
+      },
+      body: JSON.stringify({ fetchBody: true }),
+    });
+    if (!resp.ok) throw new Error(`API HTTP ${resp.status}`);
+
+    const json = await resp.json();
+    if (!json.isSuccess) throw new Error('API returned failure');
+    const content = json.data?.documentContent?.checkpoint?.content;
+    if (!content) throw new Error('No checkpoint content in API response');
+
+    const doc = JSON.parse(content);
+    if (!doc.body || !Array.isArray(doc.body)) throw new Error('Unexpected body structure');
+
+    // body[0]="root", body[1]={sectPr...}, body[2]=[...blocks]
+    const blocks = doc.body[2];
+    if (!Array.isArray(blocks)) throw new Error('No blocks array');
+    return { blocks, doc };
+  }
+
+  // ── Convert API body blocks to Markdown ──
+
+  function extractTextFromBlock(block) {
+    // block = ["h1"|"p"|..., props_or_skip, ...children]
+    // children are: ["span", {...}, ["span", {...}, "text"]] or ["img", {...}] or ["br", {...}] or ["tag", {...}]
+    const parts = [];
+    for (let i = (typeof block[1] === 'object' && !Array.isArray(block[1]) ? 2 : 1); i < block.length; i++) {
+      walkBlockChild(block[i], parts);
+    }
+    return parts.join('').replace(/[​-‏‪-‮⁠-⁤⁪-⁯﻿­]/g, '');
+  }
+
+  function walkBlockChild(node, parts) {
+    if (typeof node === 'string') { parts.push(node); return; }
+    if (!Array.isArray(node)) return;
+    const type = node[0];
+    switch (type) {
+      case 'span': {
+        // ["span", {...}, ["span", {...}, "text"]]
+        for (let i = 1; i < node.length; i++) walkBlockChild(node[i], parts);
+        break;
+      }
+      case 'br': {
+        parts.push('\n');
+        break;
+      }
+      case 'img': {
+        let src = (node[1] && node[1].src) || '';
+        if (src && src.startsWith('/')) src = 'https://alidocs.dingtalk.com' + src;
+        const alt = (node[1] && node[1].name) || 'image';
+        if (src) parts.push(`![${alt}](${src})`);
+        break;
+      }
+      case 'tag': break; // skip embedded doc tags (render as empty)
+      default: {
+        for (let i = 1; i < node.length; i++) walkBlockChild(node[i], parts);
+      }
+    }
+  }
+
+  function collectImagesFromBody(blocks) {
+    const images = [];
+    const seenDedup = new Set();
+
+    function walk(node) {
+      if (!Array.isArray(node)) return;
+      if (node[0] === 'img') {
+        const props = node[1] || {};
+        let src = props.src || '';
+        if (src && src.startsWith('/')) src = 'https://alidocs.dingtalk.com' + src;
+        if (!src) return;
+        const dedupKey = normalizeSrcForDedup(src);
+        if (seenDedup.has(dedupKey)) return;
+        seenDedup.add(dedupKey);
+        const alt = (props.name || `img_${images.length}`).replace(/[/\\:*?"<>|]/g, '_').substring(0, 60);
+        images.push({ src, alt, index: images.length });
+        return;
+      }
+      for (let i = 1; i < node.length; i++) walk(node[i]);
+    }
+    for (const block of blocks) walk(block);
+    return images;
+  }
+
+  function blocksToMarkdownApi(blocks) {
+    const lines = [];
+
+    for (const block of blocks) {
+      if (!Array.isArray(block) || !block.length) continue;
+      const type = block[0];
+      const props = (block.length > 1 && typeof block[1] === 'object' && !Array.isArray(block[1])) ? block[1] : {};
+      const text = extractTextFromBlock(block).trim();
+
+      // Headings
+      const hMatch = type.match(/^h([1-6])$/);
+      if (hMatch) {
+        if (text) lines.push('\n\n' + '#'.repeat(parseInt(hMatch[1])) + ' ' + text + '\n\n');
+        continue;
+      }
+
+      // Paragraph
+      if (type === 'p') {
+        if (props.blockquote) {
+          if (text) lines.push('\n\n> ' + text.replace(/\n/g, '\n> ') + '\n\n');
+          else lines.push('\n\n>\n\n');
+        } else if (props.list) {
+          const { list } = props;
+          const level = list.level || 0;
+          const indent = '  '.repeat(level);
+          const isOrdered = list.isOrdered;
+          const format = (list.listStyle || {}).format || 'bullet';
+          const symbolText = (list.listStyle || {}).text || '●';
+
+          if (format === 'decimal') {
+            lines.push('\n' + indent + '1. ' + text);
+          } else if (format === 'bullet') {
+            lines.push('\n' + indent + '- ' + text);
+          } else {
+            lines.push('\n' + indent + '- ' + text);
+          }
+        } else {
+          if (text) lines.push('\n\n' + text + '\n\n');
+        }
+        continue;
+      }
+
+      // Table
+      if (type === 'table') {
+        const rows = block.slice(2); // skip "table" and props
+        const mdRows = [];
+        let hasHeader = false;
+        for (const tr of rows) {
+          if (!Array.isArray(tr) || tr[0] !== 'tr') continue;
+          const trProps = tr[1] || {};
+          const cells = [];
+          for (const tc of tr.slice(2)) {
+            if (!Array.isArray(tc) || tc[0] !== 'tc') continue;
+            const cellText = extractTextFromBlock(tc).replace(/\n/g, ' ').replace(/\|/g, '\\|').trim();
+            // Grab inline images inside table cells
+            const imgSrcs = [];
+            walkTableImgs(tc, imgSrcs);
+            cells.push([cellText, ...imgSrcs].filter(Boolean).join(' '));
+          }
+          if (!cells.length) continue;
+          mdRows.push('| ' + cells.join(' | ') + ' |');
+          if (!hasHeader) {
+            mdRows.push('| ' + cells.map(() => '---').join(' | ') + ' |');
+            hasHeader = true;
+          }
+        }
+        if (mdRows.length) lines.push('\n\n' + mdRows.join('\n') + '\n\n');
+        continue;
+      }
+
+      // Blockquote (if top-level blockquote element — rare with API format)
+      if (type === 'blockquote') {
+        if (text) lines.push('\n\n' + text.split('\n').map(l => '> ' + l).join('\n') + '\n\n');
+        continue;
+      }
+
+      // Fallback: generic text
+      if (text) lines.push('\n\n' + text + '\n\n');
+    }
+
+    return lines.join('').replace(/\n{4,}/g, '\n\n\n').trim();
+  }
+
+  function walkTableImgs(node, out) {
+    if (!Array.isArray(node)) return;
+    if (node[0] === 'img') {
+      let src = (node[1] && node[1].src) || '';
+      if (src && src.startsWith('/')) src = 'https://alidocs.dingtalk.com' + src;
+      if (src) out.push(`![image](${src})`);
+      return;
+    }
+    for (let i = 1; i < node.length; i++) walkTableImgs(node[i], out);
+  }
+
   // ─── Main Extract ─────────────────────────────────────────────────────────
 
   async function handleExtract() {
@@ -635,25 +831,47 @@
     const url = location.href;
 
     if (site === 'alidocs') {
-      const scrollResult = await scrollAndCollectAlidocs();
-      if (!scrollResult || scrollResult.blocks.length === 0) {
-        return { success: false, error: '未找到文档内容。请确认文档已完全加载。' };
+      try {
+        const { blocks } = await fetchAlidocsApi();
+        if (!blocks || blocks.length === 0) {
+          throw new Error('Empty document body');
+        }
+
+        const imageObjects = collectImagesFromBody(blocks);
+        console.log('[api-extract] blocks:', blocks.length, 'images:', imageObjects.length);
+        const fetchedImages = await fetchAllImages(imageObjects);
+        const markdown = blocksToMarkdownApi(blocks);
+
+        return {
+          success: true, title, url, site, markdown,
+          fetchedImages: fetchedImages.map(img => ({
+            src: img.src, alt: img.alt, index: img.index,
+            dataUrl: img.success ? img.dataUrl : null,
+            mimeType: img.success ? img.mimeType : null,
+            success: img.success, error: img.error,
+          })),
+        };
+      } catch (e) {
+        console.warn('[api-extract] API extraction failed, falling back to DOM scroll:', e.message);
+        // Fallback to original DOM scroll approach
+        const scrollResult = await scrollAndCollectAlidocs();
+        if (!scrollResult || scrollResult.blocks.length === 0) {
+          return { success: false, error: '未找到文档内容。请确认文档已完全加载。' };
+        }
+        const { blocks } = scrollResult;
+        const imageObjects = collectImages(blocks);
+        const fetchedImages = await fetchAllImages(imageObjects);
+        const markdown = blocksToMarkdown(blocks, {});
+        return {
+          success: true, title, url, site, markdown,
+          fetchedImages: fetchedImages.map(img => ({
+            src: img.src, alt: img.alt, index: img.index,
+            dataUrl: img.success ? img.dataUrl : null,
+            mimeType: img.success ? img.mimeType : null,
+            success: img.success, error: img.error,
+          })),
+        };
       }
-
-      const { blocks } = scrollResult;
-      const imageObjects = collectImages(blocks);
-      const fetchedImages = await fetchAllImages(imageObjects);
-      const markdown = blocksToMarkdown(blocks, {});
-
-      return {
-        success: true, title, url, site, markdown,
-        fetchedImages: fetchedImages.map(img => ({
-          src: img.src, alt: img.alt, index: img.index,
-          dataUrl: img.success ? img.dataUrl : null,
-          mimeType: img.success ? img.mimeType : null,
-          success: img.success, error: img.error,
-        })),
-      };
     }
 
     // Generic fallback

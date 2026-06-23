@@ -461,6 +461,40 @@
   }
 
   async function fetchImageAsBase64(src) {
+    const logErr = (method, msg) => {
+      console.log(`[content] ${method} failed: ${msg} | src: ${src.substring(0, 120)}`);
+    };
+
+    // ── Attempt 1: XHR from content script (host_permissions <all_urls> bypasses CORS,
+    //              withCredentials auto-sends browser cookies for CDN auth) ──
+    try {
+      const result = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', src, true);
+        xhr.responseType = 'blob';
+        xhr.timeout = 30000;
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const blob = xhr.response;
+            const reader = new FileReader();
+            reader.onload = () => resolve({ dataUrl: reader.result, mimeType: blob.type });
+            reader.onerror = () => reject(new Error('FileReader error'));
+            reader.readAsDataURL(blob);
+          } else {
+            reject(new Error(`HTTP ${xhr.status}`));
+          }
+        };
+        xhr.onerror = () => reject(new Error('XHR network error'));
+        xhr.ontimeout = () => reject(new Error('XHR timeout'));
+        xhr.send();
+      });
+      console.log(`[content] XHR OK → mime=${result.mimeType} | src: ${src.substring(0, 80)}`);
+      return result;
+    } catch (xhrErr) {
+      logErr('XHR', xhrErr.message);
+    }
+
+    // ── Attempt 2: fallback to background proxy with cookie API ──
     try {
       const resp = await chrome.runtime.sendMessage({
         action: 'fetchImage',
@@ -468,11 +502,13 @@
         referer: location.href,
       });
       if (!resp || !resp.success) throw new Error(resp?.error || 'fetchImage failed');
+      console.log(`[content] background proxy OK | src: ${src.substring(0, 80)}`);
       return { dataUrl: resp.dataUrl, mimeType: resp.mimeType };
-    } catch (e) {
-      console.log(`[content] fetchImage failed: ${e.message} | src: ${src.substring(0, 120)}`);
-      throw e;
+    } catch (bgErr) {
+      logErr('background', bgErr.message);
     }
+
+    throw new Error('All fetch methods exhausted');
   }
 
   async function fetchAllImages(images) {

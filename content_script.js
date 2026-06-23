@@ -679,18 +679,38 @@
       throw new Error('Unexpected body structure');
     }
 
-    console.log('[api-extract] body is array, len:', body.length,
-      'body[0]:', typeof body[0], JSON.stringify(body[0]).substring(0, 60),
-      'body[1]:', typeof body[1], Array.isArray(body[1]) ? 'array[' + body[1].length + ']' : (typeof body[1]),
-      'body[2]:', typeof body[2], Array.isArray(body[2]) ? 'array[' + body[2].length + ']' : (typeof body[2]));
+    console.log('[api-extract] body is array, len:', body.length);
+    // Dump first 5 elements and a sample deeper element
+    for (let i = 0; i < Math.min(5, body.length); i++) {
+      const el = body[i];
+      const t = typeof el;
+      if (t === 'string') console.log(`[api-extract]   body[${i}]: string "${el}"`);
+      else if (t === 'object' && !Array.isArray(el)) console.log(`[api-extract]   body[${i}]: object keys=[${Object.keys(el).join(',')}]`);
+      else if (Array.isArray(el)) {
+        console.log(`[api-extract]   body[${i}]: array[${el.length}] first=[${typeof el[0]}:${JSON.stringify(el[0]).substring(0,80)}]`);
+        // If this looks like a block, show a few block types
+        if (el.length > 0 && Array.isArray(el[0])) {
+          for (let j = 0; j < Math.min(5, el.length); j++) {
+            console.log(`[api-extract]     [${j}] type=${el[j] && el[j][0]} preview=${JSON.stringify(el[j]).substring(0,100)}`);
+          }
+        }
+      }
+    }
 
-    // body[0]="root", body[1]={sectPr...}, body[2]=[...blocks]
-    const blocks = body[2];
-    if (!Array.isArray(blocks)) throw new Error('No blocks array at body[2]');
-    console.log('[api-extract] blocks:', blocks.length,
-      'first block type:', (blocks[0] && blocks[0][0]) || '?',
-      'last block type:', (blocks[blocks.length-1] && blocks[blocks.length-1][0]) || '?');
-    return { blocks, doc };
+    // Try body as blocks directly (if no "root" wrapper)
+    if (body.length > 2 && body[0] === 'root' && typeof body[1] === 'object') {
+      const blocks = body[2];
+      if (Array.isArray(blocks)) {
+        console.log('[api-extract] using body[2] as blocks, len:', blocks.length);
+        return { blocks, doc };
+      }
+    }
+    // Maybe body IS the blocks
+    if (Array.isArray(body[0])) {
+      console.log('[api-extract] body is blocks directly, len:', body.length);
+      return { blocks: body, doc };
+    }
+    throw new Error('Cannot find blocks in body structure');
   }
 
   // ── Convert API body blocks to Markdown ──

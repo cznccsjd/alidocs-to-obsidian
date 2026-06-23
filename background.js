@@ -303,8 +303,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function fetchImageForContent(src, referer) {
+  const shortSrc = src.replace(/[?&](Expires|Signature|auth_key|OSSAccessKeyId|x-oss-process)=[^&]+/g, '?***').substring(0, 120);
+
   // Collect cookies for the image CDN domain and the page domain
   let cookieHeader = '';
+  let cookieNames = [];
   try {
     const imgUrl = new URL(src);
     const refererUrl = referer ? new URL(referer) : null;
@@ -322,6 +325,10 @@ async function fetchImageForContent(src, referer) {
       }
     }
 
+    console.log(`[fetchImage] src: ${shortSrc}`);
+    console.log(`[fetchImage] referer: ${referer || '(none)'}`);
+    console.log(`[fetchImage] querying cookie domains: ${[...domains].join(', ')}`);
+
     // Merge cookies from domain-based queries and url-based query
     const cookieMap = new Map(); // keyed by name+domain+path to dedup
     const addCookies = (list) => {
@@ -333,32 +340,62 @@ async function fetchImageForContent(src, referer) {
 
     for (const domain of domains) {
       try {
-        addCookies(await chrome.cookies.getAll({ domain }));
-      } catch { /* domain not accessible */ }
+        const found = await chrome.cookies.getAll({ domain });
+        console.log(`[fetchImage] domain="${domain}" → ${found.length} cookies: [${found.map(c => c.name).join(', ')}]`);
+        addCookies(found);
+      } catch (e) { console.log(`[fetchImage] domain="${domain}" → ERROR: ${e.message}`); }
     }
     // Also query by image URL to catch path-scoped cookies
     try {
-      addCookies(await chrome.cookies.getAll({ url: src }));
-    } catch { /* url query failed */ }
+      const urlCookies = await chrome.cookies.getAll({ url: src });
+      console.log(`[fetchImage] url-query → ${urlCookies.length} cookies: [${urlCookies.map(c => c.name).join(', ')}]`);
+      addCookies(urlCookies);
+    } catch (e) { console.log(`[fetchImage] url-query → ERROR: ${e.message}`); }
 
     const cookies = [...cookieMap.values()];
+    cookieNames = cookies.map(c => c.name);
 
     if (cookies.length > 0) {
       cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
     }
-  } catch { /* cookie gathering failed, proceed without */ }
+    console.log(`[fetchImage] total unique cookies: ${cookies.length} → [${cookieNames.join(', ')}]`);
+  } catch (e) {
+    console.log(`[fetchImage] cookie gathering threw: ${e.message}`);
+  }
 
   const headers = {};
   if (referer) headers['Referer'] = referer;
   if (cookieHeader) headers['Cookie'] = cookieHeader;
 
   const resp = await fetch(src, { headers });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  const blob = await resp.blob();
+  const respContentType = resp.headers.get('content-type') || '';
+  const respText = await resp.text();
+  const preview = respText.substring(0, 300).replace(/\n/g, '\\n');
+  console.log(`[fetchImage] HTTP ${resp.status} content-type="${respContentType}" body-preview="${preview}"`);
+
+  if (!resp.ok) {
+    // Check if body looks like an HTML error page
+    const looksLikeError = /<!DOCTYPE|<html|<title|暂无权限|AccessDenied|error/i.test(respText);
+    throw new Error(looksLikeError
+      ? `CDN returned error page (${resp.status}): ${preview}`
+      : `HTTP ${resp.status}: ${preview}`);
+  }
+
+  // Check if response is actually an error page despite 200
+  if (looksLikeError(respText)) {
+    console.warn(`[fetchImage] WARNING: HTTP 200 but body looks like an error page!`);
+    throw new Error(`CDN returned disguised error page: ${preview}`);
+  }
+
+  const blob = new Blob([respText], { type: respContentType || 'application/octet-stream' });
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve({ success: true, dataUrl: reader.result, mimeType: blob.type });
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+}
+
+function looksLikeError(body) {
+  return /暂无权限|Access\s*Denied|访问.*权限|权限.*访问|403|Forbidden/i.test(body.substring(0, 500));
 }

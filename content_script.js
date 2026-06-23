@@ -461,13 +461,18 @@
   }
 
   async function fetchImageAsBase64(src) {
-    const resp = await chrome.runtime.sendMessage({
-      action: 'fetchImage',
-      src,
-      referer: location.href,
-    });
-    if (!resp || !resp.success) throw new Error(resp?.error || 'fetchImage failed');
-    return { dataUrl: resp.dataUrl, mimeType: resp.mimeType };
+    try {
+      const resp = await chrome.runtime.sendMessage({
+        action: 'fetchImage',
+        src,
+        referer: location.href,
+      });
+      if (!resp || !resp.success) throw new Error(resp?.error || 'fetchImage failed');
+      return { dataUrl: resp.dataUrl, mimeType: resp.mimeType };
+    } catch (e) {
+      console.log(`[content] fetchImage failed: ${e.message} | src: ${src.substring(0, 120)}`);
+      throw e;
+    }
   }
 
   async function fetchAllImages(images) {

@@ -210,16 +210,30 @@
     console.log('[diag] deduped (skipped):', totalDeduped);
     console.log('[diag] unique blocks captured:', blocks.length, '→ by tag:', JSON.stringify(byTag));
     console.log('[diag] total text chars in blocks:', totalTextChars);
-    for (const [tag, count] of Object.entries(byTag).sort()) {
-      const sample = blocks.find(b => b.el.tagName.toLowerCase() === tag && (b.el.innerText || '').trim());
-      if (sample) console.log(`[diag]   ${tag} x${count}  sample text: "${(sample.el.innerText || '').trim().substring(0, 100)}"`);
+
+    // Deep DOM inspection: what element types exist in the iframe body that have text?
+    const allBodyEls = iDoc.body.querySelectorAll('*');
+    const bodyTagCounts = {};
+    const bodyTagText = {};
+    for (const el of allBodyEls) {
+      const t = el.tagName.toLowerCase();
+      bodyTagCounts[t] = (bodyTagCounts[t] || 0) + 1;
+      const txt = (el.innerText || '').trim();
+      if (txt && !bodyTagText[t]) bodyTagText[t] = txt.substring(0, 80);
     }
-    // Also dump all non-IMG blocks' text preview
-    const textBlocks = blocks.filter(b => b.el.tagName !== 'IMG');
-    console.log('[diag] non-IMG blocks text previews:');
-    textBlocks.forEach((b, i) => {
-      const t = (b.el.innerText || '').trim();
-      if (t) console.log(`[diag]   [${i}] <${b.el.tagName.toLowerCase()}> "${t.substring(0, 120)}"`);
+    // Show only tags with text that are NOT in our SELECTOR
+    const selectorTags = ['h1','h2','h3','h4','h5','h6','table','img','blockquote','pre'];
+    console.log('[diag] ALL elements in iframe body by tag:');
+    for (const [tag, count] of Object.entries(bodyTagCounts).sort((a,b) => b[1]-a[1])) {
+      const inSelector = selectorTags.includes(tag) || tag === 'div'; // div may have data-listid
+      const sample = bodyTagText[tag] || '';
+      console.log(`[diag]   ${tag} x${count} inSelector=${inSelector} sample="${sample}"`);
+    }
+    // Show elements that have data-listid attribute
+    const listIdEls = iDoc.body.querySelectorAll('[data-listid]');
+    console.log(`[diag] [data-listid] elements currently in DOM: ${listIdEls.length}`);
+    listIdEls.forEach((el, i) => {
+      if (i < 5) console.log(`[diag]   [${i}] text="${(el.innerText||'').trim().substring(0, 100)}"`);
     });
 
     return { blocks, iDoc };

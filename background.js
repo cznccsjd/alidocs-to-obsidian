@@ -304,98 +304,114 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function fetchImageForContent(src, referer) {
   const shortSrc = src.replace(/[?&](Expires|Signature|auth_key|OSSAccessKeyId|x-oss-process)=[^&]+/g, '?***').substring(0, 120);
+  const imgHost = (() => { try { return new URL(src).hostname; } catch { return ''; } })();
 
-  // Collect cookies for the image CDN domain and the page domain
-  let cookieHeader = '';
-  let cookieNames = [];
-  try {
-    const imgUrl = new URL(src);
-    const refererUrl = referer ? new URL(referer) : null;
+  console.log(`[fetchImage] imgHost=${imgHost} shortSrc=${shortSrc}`);
 
-    // Gather all relevant domains: full hostnames and parent domains (with and without leading dot)
-    // chrome.cookies.getAll matches: exact domain (no dot) OR domain+subdomains (leading dot)
-    const domains = new Set();
-    for (const u of [imgUrl, refererUrl].filter(Boolean)) {
-      domains.add(u.hostname);
-      const parts = u.hostname.split('.');
-      for (let i = 1; i < parts.length; i++) {
-        const parent = parts.slice(i).join('.');
-        domains.add(parent);
-        domains.add('.' + parent); // domain cookies (e.g., .dingtalk.com)
-      }
+  // ── Strategy: try without cookies first (OSS auth_key in URL is self-contained)
+  //    If that returns an error page, retry with relevant cookies.
+  async function tryFetch(headers, label) {
+    const resp = await fetch(src, { headers });
+    const ct = resp.headers.get('content-type') || '';
+    const text = await resp.text();
+    const preview = text.substring(0, 200).replace(/\n/g, '\\n');
+
+    const isErrorPage = /暂无权限|Access\s*Denied|访问.*权限|Forbidden|403|Error/i.test(text.substring(0, 500));
+    const isImage = /^image\//.test(ct) || text.startsWith('\x89PNG') || text.startsWith('RIFF') || text.startsWith('\xFF\xD8\xFF');
+
+    console.log(`[fetchImage] ${label} → HTTP ${resp.status} ct="${ct}" isImage=${isImage} isError=${isErrorPage} preview="${preview}"`);
+
+    if (!resp.ok && !isErrorPage) {
+      throw new Error(`HTTP ${resp.status}: ${preview}`);
     }
-
-    console.log(`[fetchImage] src: ${shortSrc}`);
-    console.log(`[fetchImage] referer: ${referer || '(none)'}`);
-    console.log(`[fetchImage] querying cookie domains: ${[...domains].join(', ')}`);
-
-    // Merge cookies from domain-based queries and url-based query
-    const cookieMap = new Map(); // keyed by name+domain+path to dedup
-    const addCookies = (list) => {
-      for (const c of list) {
-        const key = `${c.name}|${c.domain}|${c.path}`;
-        if (!cookieMap.has(key)) cookieMap.set(key, c);
-      }
-    };
-
-    for (const domain of domains) {
-      try {
-        const found = await chrome.cookies.getAll({ domain });
-        console.log(`[fetchImage] domain="${domain}" → ${found.length} cookies: [${found.map(c => c.name).join(', ')}]`);
-        addCookies(found);
-      } catch (e) { console.log(`[fetchImage] domain="${domain}" → ERROR: ${e.message}`); }
+    if (isErrorPage) {
+      return null; // signal caller to retry
     }
-    // Also query by image URL to catch path-scoped cookies
+    return { ct, text };
+  }
+
+  // ── Attempt 1: no cookies, just browser-like headers ──
+  const browserHeaders = {};
+  if (referer) browserHeaders['Referer'] = referer;
+  browserHeaders['Accept'] = 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8';
+
+  let result = await tryFetch(browserHeaders, 'no-cookie');
+  let usedCookies = false;
+
+  // ── Attempt 2: retry with cookies if CDN returned an error page ──
+  if (!result) {
+    console.log(`[fetchImage] no-cookie attempt returned error page, trying with cookies...`);
+    let cookieHeader = '';
     try {
-      const urlCookies = await chrome.cookies.getAll({ url: src });
-      console.log(`[fetchImage] url-query → ${urlCookies.length} cookies: [${urlCookies.map(c => c.name).join(', ')}]`);
-      addCookies(urlCookies);
-    } catch (e) { console.log(`[fetchImage] url-query → ERROR: ${e.message}`); }
+      // Only query the image host and its parent domain (not TLD!)
+      const parts = imgHost.split('.');
+      const parentDomains = [];
+      if (parts.length >= 2) {
+        // Add one level up: e.g., dingtalk.com from alidocs2-zjk-cdn.dingtalk.com
+        parentDomains.push(parts.slice(-2).join('.'));
+        if (parts.length > 2) {
+          // Add full subdomain: e.g., alidocs2-zjk-cdn.dingtalk.com
+          parentDomains.push(imgHost);
+        }
+      }
 
-    const cookies = [...cookieMap.values()];
-    cookieNames = cookies.map(c => c.name);
+      console.log(`[fetchImage] cookie domains to try: [${imgHost}, ${parentDomains.join(', ')}]`);
 
-    if (cookies.length > 0) {
-      cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+      const cookieMap = new Map();
+      const addCookies = (list) => {
+        for (const c of list) {
+          const key = `${c.name}|${c.domain}|${c.path}`;
+          if (!cookieMap.has(key)) cookieMap.set(key, c);
+        }
+      };
+
+      // Primary: url-based query (Chrome's native cookie matching)
+      try {
+        const urlCookies = await chrome.cookies.getAll({ url: src });
+        console.log(`[fetchImage] cookies-by-url: ${urlCookies.length} → [${urlCookies.map(c => c.name).join(', ')}]`);
+        addCookies(urlCookies);
+      } catch (e) { console.log(`[fetchImage] cookies-by-url error: ${e.message}`); }
+
+      // Fallback: domain queries for image host (only — not TLD)
+      for (const domain of [...new Set([imgHost, ...parentDomains])]) {
+        try {
+          const found = await chrome.cookies.getAll({ domain });
+          if (found.length > 0) {
+            console.log(`[fetchImage] cookies-by-domain "${domain}": ${found.length} → [${found.map(c => c.name).join(', ')}]`);
+            addCookies(found);
+          }
+        } catch { /* skip */ }
+      }
+
+      const cookies = [...cookieMap.values()];
+      if (cookies.length > 0) {
+        cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+        console.log(`[fetchImage] retrying with ${cookies.length} cookies`);
+      } else {
+        console.log(`[fetchImage] no cookies found, retrying without`);
+      }
+    } catch (e) {
+      console.log(`[fetchImage] cookie gather failed: ${e.message}`);
     }
-    console.log(`[fetchImage] total unique cookies: ${cookies.length} → [${cookieNames.join(', ')}]`);
-  } catch (e) {
-    console.log(`[fetchImage] cookie gathering threw: ${e.message}`);
+
+    const retryHeaders = { ...browserHeaders };
+    if (cookieHeader) {
+      retryHeaders['Cookie'] = cookieHeader;
+      usedCookies = true;
+    }
+    result = await tryFetch(retryHeaders, `with-cookies(${usedCookies})`);
   }
 
-  const headers = {};
-  if (referer) headers['Referer'] = referer;
-  if (cookieHeader) headers['Cookie'] = cookieHeader;
-
-  const resp = await fetch(src, { headers });
-  const respContentType = resp.headers.get('content-type') || '';
-  const respText = await resp.text();
-  const preview = respText.substring(0, 300).replace(/\n/g, '\\n');
-  console.log(`[fetchImage] HTTP ${resp.status} content-type="${respContentType}" body-preview="${preview}"`);
-
-  if (!resp.ok) {
-    // Check if body looks like an HTML error page
-    const looksLikeError = /<!DOCTYPE|<html|<title|暂无权限|AccessDenied|error/i.test(respText);
-    throw new Error(looksLikeError
-      ? `CDN returned error page (${resp.status}): ${preview}`
-      : `HTTP ${resp.status}: ${preview}`);
+  if (!result) {
+    throw new Error('CDN returned error page (暂无权限 / Access Denied)');
   }
 
-  // Check if response is actually an error page despite 200
-  if (looksLikeError(respText)) {
-    console.warn(`[fetchImage] WARNING: HTTP 200 but body looks like an error page!`);
-    throw new Error(`CDN returned disguised error page: ${preview}`);
-  }
-
-  const blob = new Blob([respText], { type: respContentType || 'application/octet-stream' });
+  const { ct, text } = result;
+  const blob = new Blob([text], { type: ct || 'application/octet-stream' });
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve({ success: true, dataUrl: reader.result, mimeType: blob.type });
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
-}
-
-function looksLikeError(body) {
-  return /暂无权限|Access\s*Denied|访问.*权限|权限.*访问|403|Forbidden/i.test(body.substring(0, 500));
 }

@@ -679,10 +679,17 @@
       throw new Error('Unexpected body structure');
     }
 
+    console.log('[api-extract] body is array, len:', body.length,
+      'body[0]:', typeof body[0], JSON.stringify(body[0]).substring(0, 60),
+      'body[1]:', typeof body[1], Array.isArray(body[1]) ? 'array[' + body[1].length + ']' : (typeof body[1]),
+      'body[2]:', typeof body[2], Array.isArray(body[2]) ? 'array[' + body[2].length + ']' : (typeof body[2]));
+
     // body[0]="root", body[1]={sectPr...}, body[2]=[...blocks]
     const blocks = body[2];
     if (!Array.isArray(blocks)) throw new Error('No blocks array at body[2]');
-    console.log('[api-extract] blocks:', blocks.length);
+    console.log('[api-extract] blocks:', blocks.length,
+      'first block type:', (blocks[0] && blocks[0][0]) || '?',
+      'last block type:', (blocks[blocks.length-1] && blocks[blocks.length-1][0]) || '?');
     return { blocks, doc };
   }
 

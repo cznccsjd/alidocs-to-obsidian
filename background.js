@@ -310,29 +310,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  if (message.action === 'fetchImage') {
-    fetchImageForContent(message.src, message.referer)
-      .then(sendResponse)
-      .catch(err => sendResponse({ success: false, error: err.message }));
-    return true;
-  }
-
   return false;
 });
 
-async function fetchImageForContent(src, referer) {
-  const headers = {};
-  if (referer) headers['Referer'] = referer;
-  console.log('[fetchImage]', src.substring(0, 100));
-
-  const resp = await fetch(src, { headers });
-  if (!resp.ok) throw new Error('HTTP ' + resp.status);
-
-  const blob = await resp.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve({ success: true, dataUrl: reader.result, mimeType: blob.type });
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}

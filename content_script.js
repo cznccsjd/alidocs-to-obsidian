@@ -860,16 +860,16 @@
 
         const imageObjects = collectImagesFromBody(blocks);
         console.log('[api-extract] blocks:', blocks.length, 'images:', imageObjects.length);
-        const fetchedImages = await fetchAllImages(imageObjects);
         const markdown = blocksToMarkdownApi(blocks);
 
+        // Don't download images here — pass URLs to background to avoid
+        // exceeding Chrome's 64MB sendMessage limit with base64 data.
         return {
           success: true, title, url, site, markdown,
-          fetchedImages: fetchedImages.map(img => ({
+          fetchedImages: imageObjects.map(img => ({
             src: img.src, alt: img.alt, index: img.index,
-            dataUrl: img.success ? img.dataUrl : null,
-            mimeType: img.success ? img.mimeType : null,
-            success: img.success, error: img.error,
+            dataUrl: null, mimeType: null,
+            success: false, // background will fetch
           })),
         };
       } catch (e) {

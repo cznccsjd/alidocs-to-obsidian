@@ -202,6 +202,21 @@ async function handleClip(tabId, options = {}) {
 
   if (fetchedImages.length > 0) {
     try {
+      // Download any images that don't have base64 data (e.g., from API extraction)
+      for (const img of fetchedImages) {
+        if (!img.dataUrl && img.src && img.src.startsWith('http')) {
+          try {
+            const fetched = await fetchImageForContent(img.src, url);
+            img.dataUrl = fetched.dataUrl;
+            img.mimeType = fetched.mimeType;
+            img.success = true;
+          } catch (e) {
+            img.success = false;
+            img.error = e.message;
+          }
+        }
+      }
+
       const { imageMap, results } = await processImages(fetchedImages, settings, attachmentsFolder, folder);
       imageResults = results;
 

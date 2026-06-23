@@ -811,4 +811,98 @@
     return false;
   });
 
+  // Inject probe into main world so user can call __obsidianProbe() from F12 Console.
+  // Content script's isolated world is separate from the page's JS context.
+  function injectProbeIntoMainWorld() {
+    const script = document.createElement('script');
+    script.textContent = `(${function() {
+      window.__obsidianProbe = function() {
+        const iframe = document.getElementById('wiki-doc-iframe');
+        const iWin = iframe && (iframe.contentWindow || iframe.contentDocument && iframe.contentDocument.defaultView);
+        if (!iWin) return console.error('Cannot access iframe');
+
+        const report = {};
+
+        // Scan window for interesting globals
+        const interesting = [];
+        const keyPatterns = /store|state|model|data|doc|content|page|editor|collab|model/i;
+        try {
+          for (const key of Object.getOwnPropertyNames(iWin)) {
+            if (keyPatterns.test(key) && !/^(window|document|location|navigator|parent|top|self|frames|on\w+)$/i.test(key)) {
+              const type = typeof iWin[key];
+              let preview = type;
+              try {
+                if (type === 'string') preview = iWin[key].substring(0, 200);
+                else if (type === 'object' && iWin[key] !== null) preview = JSON.stringify(iWin[key]).substring(0, 300);
+                else if (type === 'function') preview = 'fn ' + (iWin[key].name || '');
+              } catch (e) { preview = type + ' (error: ' + e.message + ')'; }
+              interesting.push({ key, type, preview });
+            }
+          }
+        } catch (e) { interesting.push({ error: e.message }); }
+        report.interestingKeys = interesting;
+
+        // Known state container patterns
+        const patterns = ['__INITIAL_STATE__','__NEXT_DATA__','__DATA__','__REDUX_STATE__','__STORE__',
+          '__PREFETCHED_STATE__','__APOLLO_STATE__','__NUXT__','pageData','appData','initialData','globalData'];
+        const hits = [];
+        for (const name of patterns) {
+          try {
+            if (iWin[name] !== undefined) {
+              const s = JSON.stringify(iWin[name]);
+              hits.push({ name, jsonSize: s.length, preview: s.substring(0, 500) });
+            }
+          } catch (e) { /* nope */ }
+        }
+        report.stateHits = hits;
+
+        // AliDocs-specific globals
+        const aliKeys = [];
+        try {
+          for (const key of Object.getOwnPropertyNames(iWin)) {
+            if (/alidoc|dingtalk|dingdoc|we.?word|lippi|collab|doc|model/i.test(key)) {
+              aliKeys.push({ key, type: typeof iWin[key] });
+            }
+          }
+        } catch (e) {}
+        report.alidocsKeys = aliKeys;
+
+        // Search for large JSON-like objects in global scope (limited sample)
+        const largeObj = [];
+        try {
+          const seen = new Set(['window','document','location','navigator','parent','top','self','frames','console']);
+          for (const key of Object.getOwnPropertyNames(iWin)) {
+            if (seen.has(key)) continue;
+            seen.add(key);
+            try {
+              const val = iWin[key];
+              if (typeof val === 'object' && val !== null && !(val instanceof Node)) {
+                const s = JSON.stringify(val);
+                if (s.length > 200) {
+                  largeObj.push({ key, jsonLen: s.length, preview: s.substring(0, 300) });
+                }
+              }
+            } catch (e) { /* skip */ }
+          }
+        } catch (e) {}
+        report.largeObjects = largeObj.slice(0, 30);
+
+        // Check for React fiber data
+        try {
+          const root = iWin.document.getElementById('layout_body') || iWin.document.body;
+          const fiberKey = Object.keys(root).find(k => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance'));
+          if (fiberKey) report.reactFiberKey = fiberKey;
+        } catch (e) {}
+
+        console.log(JSON.stringify(report, null, 2));
+        return report;
+      };
+      console.log('%c[ObsidianClipper] %c数据探测就绪。输入 %c__obsidianProbe()%c 即可探测阿里文档数据源。',
+        'color:#a6e3a1','color:#cdd6f4','color:#89b4fa;font-weight:bold','color:#cdd6f4');
+    }})()`;
+    (document.head || document.documentElement).appendChild(script);
+    script.remove();
+  }
+  injectProbeIntoMainWorld();
+
 })();

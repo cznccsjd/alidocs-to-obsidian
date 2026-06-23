@@ -688,6 +688,105 @@
     };
   }
 
+  // ─── Data Source Probe ────────────────────────────────────────────────────
+
+  function probeDataSources() {
+    const report = {};
+
+    // Access the iframe
+    const iframe = document.getElementById('wiki-doc-iframe');
+    const iWin = iframe && (iframe.contentWindow || iframe.contentDocument?.defaultView);
+    if (!iWin) return { error: 'cannot access iframe window' };
+
+    // 1. Scan window for large objects / store-like keys
+    const interestingKeys = [];
+    const keyPatterns = /store|state|model|data|doc|content|page|editor|collab|model/i;
+    try {
+      for (const key of Object.getOwnPropertyNames(iWin)) {
+        if (keyPatterns.test(key) && !/^(window|document|location|navigator|parent|top|self|frames)$/i.test(key)) {
+          const val = iWin[key];
+          const type = typeof val;
+          let summary = type;
+          try {
+            if (type === 'object' && val !== null) {
+              summary = JSON.stringify(val).substring(0, 200);
+            } else if (type === 'string') {
+              summary = val.substring(0, 200);
+            } else if (type === 'function') {
+              summary = 'function ' + (val.name || 'anonymous');
+            }
+          } catch { summary = type + ' (not serializable)'; }
+          interestingKeys.push({ key, type, summary });
+        }
+      }
+    } catch (e) { report.windowScanError = e.message; }
+    report.interestingWindowKeys = interestingKeys;
+
+    // 2. Check __INITIAL_STATE__ / __NEXT_DATA__ / __REDUX_STATE__ style globals
+    const statePatterns = ['__INITIAL_STATE__', '__NEXT_DATA__', '__DATA__', '__REDUX_STATE__',
+      '__STORE__', '__PREFETCHED_STATE__', '__APOLLO_STATE__', '__NUXT__', '__APP_STATE__',
+      'pageData', 'appData', 'initialData', 'globalData'];
+    const stateHits = [];
+    for (const name of statePatterns) {
+      try {
+        const val = iWin[name];
+        if (val !== undefined) {
+          const s = JSON.stringify(val);
+          stateHits.push({ name, size: s.length, preview: s.substring(0, 300) });
+        }
+      } catch { /* not accessible */ }
+    }
+    report.statePatternHits = stateHits;
+
+    // 3. Try to access React/Vue component trees
+    const frameworkHints = [];
+    try {
+      // React fiber
+      const rootEl = iWin.document.getElementById('layout_body') || iWin.document.body;
+      const reactKey = Object.keys(rootEl).find(k => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance'));
+      if (reactKey) frameworkHints.push({ framework: 'React', key: reactKey });
+      // Vue
+      if (rootEl.__vue__ || rootEl.__vue_app__) frameworkHints.push({ framework: 'Vue', keys: Object.keys(rootEl).filter(k => k.includes('vue')) });
+    } catch (e) { frameworkHints.push({ error: e.message }); }
+    report.frameworkHints = frameworkHints;
+
+    // 4. Look at AliDocs specific globals
+    const alidocsKeys = [];
+    try {
+      for (const key of Object.getOwnPropertyNames(iWin)) {
+        if (/alidoc|dingtalk|dingdoc|we.?word|lippi|collab|doc/i.test(key)) {
+          const type = typeof iWin[key];
+          alidocsKeys.push({ key, type });
+        }
+      }
+    } catch {}
+    report.alidocsKeys = alidocsKeys;
+
+    // 5. Search ALL keys (not just own) for large objects
+    const largeObjects = [];
+    try {
+      const seen = new Set();
+      for (let proto = iWin; proto; proto = Object.getPrototypeOf(proto)) {
+        for (const key of Object.getOwnPropertyNames(proto)) {
+          if (seen.has(key)) continue;
+          seen.add(key);
+          try {
+            const val = iWin[key];
+            if (typeof val === 'object' && val !== null && !(val instanceof Node)) {
+              const s = JSON.stringify(val).substring(0, 500);
+              if (s.length > 100) {
+                largeObjects.push({ key, jsonLen: s.length, preview: s.substring(0, 200) });
+              }
+            }
+          } catch {}
+        }
+      }
+    } catch {}
+    report.largeObjects = largeObjects.slice(0, 20);
+
+    return report;
+  }
+
   // ─── Message Listener ─────────────────────────────────────────────────────
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -697,6 +796,16 @@
     }
     if (message.action === 'extract') {
       handleExtract().then(sendResponse).catch(err => sendResponse({ success: false, error: err.message }));
+      return true;
+    }
+    if (message.action === 'probe') {
+      try {
+        const report = probeDataSources();
+        console.log('[probe]', JSON.stringify(report, null, 2));
+        sendResponse({ success: true, report });
+      } catch (e) {
+        sendResponse({ success: false, error: e.message });
+      }
       return true;
     }
     return false;

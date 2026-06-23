@@ -318,111 +318,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function fetchImageForContent(src, referer) {
-  const shortSrc = src.replace(/[?&](Expires|Signature|auth_key|OSSAccessKeyId|x-oss-process)=[^&]+/g, '?***').substring(0, 120);
-  const imgHost = (() => { try { return new URL(src).hostname; } catch { return ''; } })();
+  const headers = {};
+  if (referer) headers['Referer'] = referer;
+  console.log('[fetchImage]', src.substring(0, 100));
 
-  console.log(`[fetchImage] imgHost=${imgHost} shortSrc=${shortSrc}`);
+  const resp = await fetch(src, { headers });
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
 
-  // ── Strategy: try without cookies first (OSS auth_key in URL is self-contained)
-  //    If that returns an error page, retry with relevant cookies.
-  async function tryFetch(headers, label) {
-    const resp = await fetch(src, { headers });
-    const ct = resp.headers.get('content-type') || '';
-    const text = await resp.text();
-    const preview = text.substring(0, 200).replace(/\n/g, '\\n');
-
-    const isErrorPage = /暂无权限|Access\s*Denied|访问.*权限|Forbidden|403|Error/i.test(text.substring(0, 500));
-    const isImage = /^image\//.test(ct) || text.startsWith('\x89PNG') || text.startsWith('RIFF') || text.startsWith('\xFF\xD8\xFF');
-
-    console.log(`[fetchImage] ${label} → HTTP ${resp.status} ct="${ct}" isImage=${isImage} isError=${isErrorPage} preview="${preview}"`);
-
-    if (!resp.ok && !isErrorPage) {
-      throw new Error(`HTTP ${resp.status}: ${preview}`);
-    }
-    if (isErrorPage) {
-      return null; // signal caller to retry
-    }
-    return { ct, text };
-  }
-
-  // ── Attempt 1: no cookies, just browser-like headers ──
-  const browserHeaders = {};
-  if (referer) browserHeaders['Referer'] = referer;
-  browserHeaders['Accept'] = 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8';
-
-  let result = await tryFetch(browserHeaders, 'no-cookie');
-  let usedCookies = false;
-
-  // ── Attempt 2: retry with cookies if CDN returned an error page ──
-  if (!result) {
-    console.log(`[fetchImage] no-cookie attempt returned error page, trying with cookies...`);
-    let cookieHeader = '';
-    try {
-      // Only query the image host and its parent domain (not TLD!)
-      const parts = imgHost.split('.');
-      const parentDomains = [];
-      if (parts.length >= 2) {
-        // Add one level up: e.g., dingtalk.com from alidocs2-zjk-cdn.dingtalk.com
-        parentDomains.push(parts.slice(-2).join('.'));
-        if (parts.length > 2) {
-          // Add full subdomain: e.g., alidocs2-zjk-cdn.dingtalk.com
-          parentDomains.push(imgHost);
-        }
-      }
-
-      console.log(`[fetchImage] cookie domains to try: [${imgHost}, ${parentDomains.join(', ')}]`);
-
-      const cookieMap = new Map();
-      const addCookies = (list) => {
-        for (const c of list) {
-          const key = `${c.name}|${c.domain}|${c.path}`;
-          if (!cookieMap.has(key)) cookieMap.set(key, c);
-        }
-      };
-
-      // Primary: url-based query (Chrome's native cookie matching)
-      try {
-        const urlCookies = await chrome.cookies.getAll({ url: src });
-        console.log(`[fetchImage] cookies-by-url: ${urlCookies.length} → [${urlCookies.map(c => c.name).join(', ')}]`);
-        addCookies(urlCookies);
-      } catch (e) { console.log(`[fetchImage] cookies-by-url error: ${e.message}`); }
-
-      // Fallback: domain queries for image host (only — not TLD)
-      for (const domain of [...new Set([imgHost, ...parentDomains])]) {
-        try {
-          const found = await chrome.cookies.getAll({ domain });
-          if (found.length > 0) {
-            console.log(`[fetchImage] cookies-by-domain "${domain}": ${found.length} → [${found.map(c => c.name).join(', ')}]`);
-            addCookies(found);
-          }
-        } catch { /* skip */ }
-      }
-
-      const cookies = [...cookieMap.values()];
-      if (cookies.length > 0) {
-        cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
-        console.log(`[fetchImage] retrying with ${cookies.length} cookies`);
-      } else {
-        console.log(`[fetchImage] no cookies found, retrying without`);
-      }
-    } catch (e) {
-      console.log(`[fetchImage] cookie gather failed: ${e.message}`);
-    }
-
-    const retryHeaders = { ...browserHeaders };
-    if (cookieHeader) {
-      retryHeaders['Cookie'] = cookieHeader;
-      usedCookies = true;
-    }
-    result = await tryFetch(retryHeaders, `with-cookies(${usedCookies})`);
-  }
-
-  if (!result) {
-    throw new Error('CDN returned error page (暂无权限 / Access Denied)');
-  }
-
-  const { ct, text } = result;
-  const blob = new Blob([text], { type: ct || 'application/octet-stream' });
+  const blob = await resp.blob();
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve({ success: true, dataUrl: reader.result, mimeType: blob.type });

@@ -14,7 +14,7 @@ const DEFAULT_PORT = 27123;
 
 async function getSettings() {
   return new Promise(resolve => {
-    chrome.storage.sync.get({
+    chrome.storage.local.get({
       apiKey: '',
       saveFolder: 'Clippings',
       attachmentsFolder: 'Clippings/attachments',
@@ -134,19 +134,20 @@ function injectImageLinks(markdown, imageMap) {
 
 // ─── Frontmatter ──────────────────────────────────────────────────────────────
 
-function buildFrontmatter(title, url, site, tags) {
-  const date = new Date().toISOString().split('T')[0];
+function buildFrontmatter(title, url, site, tags, addCreatedDate) {
   const tagList = (tags && tags.length) ? tags : ['clipping'];
-  return [
+  const lines = [
     '---',
     `title: "${title.replace(/"/g, '\\"')}"`,
     `source: "${url}"`,
     `site: ${site}`,
-    `created: ${date}`,
-    `tags: [${tagList.map(t => `"${t}"`).join(', ')}]`,
-    '---',
-    '',
-  ].join('\n');
+  ];
+  if (addCreatedDate !== false) {
+    lines.push(`created: ${new Date().toISOString().split('T')[0]}`);
+  }
+  lines.push(`tags: [${tagList.map(t => `"${t}"`).join(', ')}]`);
+  lines.push('---', '');
+  return lines.join('\n');
 }
 
 const INVISIBLE_CHARS_RE = /[\u200B-\u200F\u202A-\u202E\u2060-\u2064\u206A-\u206F\uFEFF\u00AD\u034F\u2028\u2029]/g;
@@ -210,9 +211,14 @@ async function handleClip(tabId, options = {}) {
               action: 'xhrFetchImage',
               src: img.src,
             });
-            img.dataUrl = fetched.dataUrl;
-            img.mimeType = fetched.mimeType;
-            img.success = true;
+            if (fetched && fetched.success) {
+              img.dataUrl = fetched.dataUrl;
+              img.mimeType = fetched.mimeType;
+              img.success = true;
+            } else {
+              img.success = false;
+              img.error = (fetched && fetched.error) || 'xhrFetchImage returned failure';
+            }
           } catch (e) {
             img.success = false;
             img.error = e.message;
@@ -233,7 +239,7 @@ async function handleClip(tabId, options = {}) {
 
   // Step 3: Build final note
   const frontmatter = settings.addFrontmatter
-    ? buildFrontmatter(options.customTitle || title, url, site, options.tags)
+    ? buildFrontmatter(options.customTitle || title, url, site, options.tags, settings.addCreatedDate)
     : '';
 
   const header = `# ${options.customTitle || title}\n\n> **来源：** [${url}](${url})\n\n---\n\n`;

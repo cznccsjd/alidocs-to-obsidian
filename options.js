@@ -30,7 +30,7 @@ const elStatusBar = document.getElementById('statusBar');
 // ─── Load Settings ────────────────────────────────────────────────────────────
 
 function loadSettings() {
-  chrome.storage.sync.get(DEFAULTS, (settings) => {
+  chrome.storage.local.get(DEFAULTS, (settings) => {
     elApiKey.value = settings.apiKey || '';
     elPort.value = settings.port || 27123;
     elSaveFolder.value = settings.saveFolder || 'Clippings';
@@ -52,7 +52,7 @@ function saveSettings() {
     addCreatedDate: elAddCreatedDate.checked,
   };
 
-  chrome.storage.sync.set(settings, () => {
+  chrome.storage.local.set(settings, () => {
     showStatus('success', '✅ 设置已保存！');
     setTimeout(clearStatus, 3000);
   });
@@ -63,7 +63,7 @@ function saveSettings() {
 function resetSettings() {
   if (!confirm('确定要恢复默认设置吗？API Key 也会被清除。')) return;
 
-  chrome.storage.sync.set(DEFAULTS, () => {
+  chrome.storage.local.set(DEFAULTS, () => {
     loadSettings();
     showStatus('success', '✅ 已恢复默认设置');
     setTimeout(clearStatus, 3000);

@@ -490,21 +490,7 @@
       logErr('XHR', xhrErr.message);
     }
 
-    // ── Attempt 2: fallback to background proxy with cookie API ──
-    try {
-      const resp = await chrome.runtime.sendMessage({
-        action: 'fetchImage',
-        src,
-        referer: location.href,
-      });
-      if (!resp || !resp.success) throw new Error(resp?.error || 'fetchImage failed');
-      console.log(`[content] background proxy OK | src: ${src.substring(0, 80)}`);
-      return { dataUrl: resp.dataUrl, mimeType: resp.mimeType };
-    } catch (bgErr) {
-      logErr('background', bgErr.message);
-    }
-
-    throw new Error('All fetch methods exhausted');
+    throw new Error('XHR failed: ' + xhrErr.message);
   }
 
   async function fetchAllImages(images) {

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AliDocs to Obsidian - 设置</title>
+  <title>__MSG_options_title__</title>
   <style>
     * {
       box-sizing: border-box;
@@ -295,64 +295,60 @@
       <div class="header-logo">📝</div>
       <div>
         <div class="header-title">AliDocs to Obsidian</div>
-        <div class="header-subtitle">将网页内容保存到 Obsidian，保留完整格式</div>
+        <div class="header-subtitle">__MSG_options_subtitle__</div>
       </div>
     </div>
 
     <!-- Obsidian Connection -->
     <div class="card">
-      <div class="card-title">🔌 Obsidian 连接设置</div>
+      <div class="card-title">__MSG_options_connection_settings__</div>
 
       <div class="field-group">
-        <div class="field-label">Local REST API 密钥</div>
-        <input type="password" class="field-input" id="apiKey" placeholder="粘贴你的 API Key 到这里">
+        <div class="field-label">__MSG_options_api_key_label__</div>
+        <input type="password" class="field-input" id="apiKey" placeholder="__MSG_options_api_key_placeholder__">
         <div class="field-help">
-          在 Obsidian → 设置 → Community Plugins → Local REST API 中找到 API Key。
-          确保插件已启用。
+          __MSG_options_api_key_help1__
+          __MSG_options_api_key_help2__
         </div>
       </div>
 
       <div class="field-group">
-        <div class="field-label">端口</div>
+        <div class="field-label">__MSG_options_port_label__</div>
         <input type="number" class="field-input" id="port" placeholder="27123" value="27123" style="width: 120px">
-        <div class="field-help">默认端口 <code>27123</code>，无需修改</div>
+        <div class="field-help">__MSG_options_port_help__</div>
       </div>
 
       <div class="test-row">
-        <button class="btn btn-secondary" id="btnTest">测试连接</button>
-        <div class="test-result" id="testResult">点击"测试连接"验证</div>
+        <button class="btn btn-secondary" id="btnTest">__MSG_options_test_connection__</button>
+        <div class="test-result" id="testResult">__MSG_options_test_prompt__</div>
       </div>
     </div>
 
     <!-- Save Settings -->
     <div class="card">
-      <div class="card-title">📁 保存设置</div>
+      <div class="card-title">__MSG_options_save_settings__</div>
 
       <div class="field-group">
-        <div class="field-label">默认保存文件夹</div>
+        <div class="field-label">__MSG_options_default_folder__</div>
         <input type="text" class="field-input" id="saveFolder" placeholder="Clippings">
-        <div class="field-help">
-          在 Obsidian Vault 内的文件夹路径。例如：<code>Clippings</code> 或 <code>Inbox/网页</code>
-        </div>
+        <div class="field-help">__MSG_options_default_folder_help__</div>
       </div>
 
       <div class="field-group">
-        <div class="field-label">图片附件文件夹</div>
+        <div class="field-label">__MSG_options_attachments_folder__</div>
         <input type="text" class="field-input" id="attachmentsFolder" placeholder="Clippings/attachments">
-        <div class="field-help">
-          下载的图片保存位置。例如：<code>Clippings/attachments</code> 或 <code>Resources</code>
-        </div>
+        <div class="field-help">__MSG_options_attachments_folder_help__</div>
       </div>
     </div>
 
     <!-- Note Options -->
     <div class="card">
-      <div class="card-title">📋 笔记选项</div>
+      <div class="card-title">__MSG_options_note_options__</div>
 
       <div class="toggle-row">
         <div>
-          <div class="toggle-label">添加 Frontmatter</div>
-          <div class="toggle-sublabel">自动添加 YAML 元数据（标题、来源、日期）</div>
+          <div class="toggle-label">__MSG_options_add_frontmatter__</div>
+          <div class="toggle-sublabel">__MSG_options_add_frontmatter_help__</div>
         </div>
         <label class="toggle">
           <input type="checkbox" id="addFrontmatter">
@@ -364,8 +360,8 @@
 
       <div class="toggle-row">
         <div>
-          <div class="toggle-label">添加创建日期</div>
-          <div class="toggle-sublabel">在 Frontmatter 中记录保存时间</div>
+          <div class="toggle-label">__MSG_options_add_created_date__</div>
+          <div class="toggle-sublabel">__MSG_options_add_created_date_help__</div>
         </div>
         <label class="toggle">
           <input type="checkbox" id="addCreatedDate">
@@ -376,8 +372,8 @@
 
     <!-- Buttons -->
     <div class="btn-row">
-      <button class="btn btn-secondary" id="btnReset">恢复默认</button>
-      <button class="btn btn-primary" id="btnSave">保存设置</button>
+      <button class="btn btn-secondary" id="btnReset">__MSG_options_reset_default__</button>
+      <button class="btn btn-primary" id="btnSave">__MSG_options_save_btn__</button>
     </div>
 
     <div class="status-bar" id="statusBar"></div>

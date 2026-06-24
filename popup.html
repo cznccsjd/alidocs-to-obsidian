@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -293,15 +293,15 @@
 <body>
   <div class="header">
     <div class="header-logo">📝</div>
-    <div class="header-title">保存到 Obsidian</div>
-    <div class="header-settings" id="btnSettings" title="设置">⚙️</div>
+    <div class="header-title">__MSG_popup_title__</div>
+    <div class="header-settings" id="btnSettings" title="Settings">⚙️</div>
   </div>
 
   <!-- No API key state -->
   <div class="no-api-key" id="noApiKey" style="display:none">
-    <p>请先配置 Obsidian Local REST API 密钥</p>
+    <p>__MSG_popup_no_api_key__</p>
     <br>
-    <p><a href="#" id="openOptions">打开设置 →</a></p>
+    <p><a href="#" id="openOptions">__MSG_popup_open_settings__</a></p>
   </div>
 
   <!-- Main UI -->
@@ -309,39 +309,39 @@
     <!-- Page info -->
     <div class="page-info">
       <div class="site-badge" id="siteBadge">generic</div>
-      <div class="page-title" id="pageTitle">加载中...</div>
+      <div class="page-title" id="pageTitle">__MSG_popup_loading__</div>
       <div class="page-url" id="pageUrl"></div>
     </div>
 
     <!-- Save folder -->
     <div class="field-group">
-      <div class="field-label">保存位置</div>
+      <div class="field-label">__MSG_popup_save_folder__</div>
       <input type="text" class="field-input" id="saveFolder" placeholder="Clippings">
     </div>
 
     <!-- Custom title -->
     <div class="field-group">
-      <div class="field-label">文件名（不含.md）</div>
-      <input type="text" class="field-input" id="customTitle" placeholder="留空使用页面标题">
+      <div class="field-label">__MSG_popup_file_name__</div>
+      <input type="text" class="field-input" id="customTitle" placeholder="__MSG_popup_file_name_placeholder__">
     </div>
 
     <!-- Tags -->
     <div class="field-group">
-      <div class="field-label">标签（逗号分隔）</div>
-      <input type="text" class="field-input tags-input" id="tagsInput" placeholder="clipping, 阅读">
+      <div class="field-label">__MSG_popup_tags__</div>
+      <input type="text" class="field-input tags-input" id="tagsInput" placeholder="__MSG_popup_tags_placeholder__">
     </div>
 
     <!-- Save button -->
     <button class="btn-save" id="btnSave">
       <span id="btnIcon">💾</span>
-      <span id="btnText">保存到 Obsidian</span>
+      <span id="btnText">__MSG_popup_save_btn__</span>
     </button>
 
     <!-- Progress -->
     <div class="progress-steps" id="progressSteps">
-      <div class="step" id="step1"><span class="step-icon">⬜</span> 提取页面内容</div>
-      <div class="step" id="step2"><span class="step-icon">⬜</span> 下载图片</div>
-      <div class="step" id="step3"><span class="step-icon">⬜</span> 保存到 Obsidian</div>
+      <div class="step" id="step1"><span class="step-icon">⬜</span> __MSG_popup_step_extracting__</div>
+      <div class="step" id="step2"><span class="step-icon">⬜</span> __MSG_popup_step_downloading__</div>
+      <div class="step" id="step3"><span class="step-icon">⬜</span> __MSG_popup_step_saving__</div>
     </div>
 
     <!-- Status -->
@@ -351,7 +351,7 @@
   <div class="footer">
     <div class="conn-indicator">
       <div class="conn-dot" id="connDot"></div>
-      <span id="connText">检测连接中...</span>
+      <span id="connText">__MSG_popup_checking_connection__</span>
     </div>
   </div>
 

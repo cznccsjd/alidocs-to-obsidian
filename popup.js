@@ -100,14 +100,14 @@ async function checkConnection() {
 
     if (result.success) {
       elConnDot.className = 'conn-dot connected';
-      elConnText.textContent = 'Obsidian 已连接';
+      elConnText.textContent = chrome.i18n.getMessage('popup_connected');
     } else {
       elConnDot.className = 'conn-dot disconnected';
-      elConnText.textContent = 'Obsidian 未连接';
+      elConnText.textContent = chrome.i18n.getMessage('popup_disconnected');
     }
   } catch {
     elConnDot.className = 'conn-dot disconnected';
-    elConnText.textContent = '连接失败';
+    elConnText.textContent = chrome.i18n.getMessage('popup_connection_failed');
   }
 }
 
@@ -154,13 +154,13 @@ function setSaving(saving) {
 
   if (saving) {
     elBtnIcon.textContent = '';
-    elBtnText.textContent = '保存中...';
+    elBtnText.textContent = chrome.i18n.getMessage('popup_saving');
     const spinner = document.createElement('div');
     spinner.className = 'spinner';
     elBtnIcon.appendChild(spinner);
   } else {
     elBtnIcon.textContent = '💾';
-    elBtnText.textContent = '保存到 Obsidian';
+    elBtnText.textContent = chrome.i18n.getMessage('popup_save_btn');
   }
 }
 
@@ -197,19 +197,19 @@ elBtnSave.addEventListener('click', async () => {
       setStep(2, 'done');
 
       const msg = result.imageCount > 0
-        ? `✅ 已保存！下载了 ${result.imageSuccess}/${result.imageCount} 张图片\n📁 ${result.filePath}`
-        : `✅ 已保存！\n📁 ${result.filePath}`;
+        ? chrome.i18n.getMessage('popup_saved_with_images', [String(result.imageSuccess), String(result.imageCount), result.filePath])
+        : chrome.i18n.getMessage('popup_saved_no_images', [result.filePath]);
 
       setStatus('success', msg);
     } else {
       setStep(0, 'failed');
       setStep(1, 'failed');
       setStep(2, 'failed');
-      setStatus('error', `❌ 保存失败：${result.error}`);
+      setStatus('error', chrome.i18n.getMessage('popup_save_failed', [result.error]));
     }
   } catch (err) {
     setStep(0, 'failed');
-    setStatus('error', `❌ 错误：${err.message}`);
+    setStatus('error', chrome.i18n.getMessage('popup_error', [err.message]));
   } finally {
     setSaving(false);
   }
@@ -231,6 +231,6 @@ if (elOpenOptions) {
 // ─── Start ────────────────────────────────────────────────────────────────────
 
 init().catch(err => {
-  elPageTitle.textContent = '加载失败';
+  elPageTitle.textContent = chrome.i18n.getMessage('popup_load_failed');
   setStatus('error', err.message);
 });

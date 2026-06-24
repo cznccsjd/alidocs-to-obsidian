@@ -167,7 +167,7 @@ async function handleClip(tabId, options = {}) {
   const settings = await getSettings();
 
   if (!settings.apiKey) {
-    return { success: false, error: 'API Key 未设置。请打开扩展设置页面配置。' };
+    return { success: false, error: chrome.i18n.getMessage('bg_no_api_key') };
   }
 
   // Step 0: Ensure content script is injected
@@ -182,11 +182,11 @@ async function handleClip(tabId, options = {}) {
   try {
     extractResult = await chrome.tabs.sendMessage(tabId, { action: 'extract' });
   } catch (err) {
-    return { success: false, error: `提取内容失败：${err.message}` };
+    return { success: false, error: chrome.i18n.getMessage('bg_extract_failed', [err.message]) };
   }
 
   if (!extractResult || !extractResult.success) {
-    return { success: false, error: extractResult?.error || '提取失败' };
+    return { success: false, error: extractResult?.error || chrome.i18n.getMessage('bg_extract_failed_generic') };
   }
 
   const { title, url, site, markdown: initialMd, fetchedImages = [] } = extractResult;
@@ -242,7 +242,8 @@ async function handleClip(tabId, options = {}) {
     ? buildFrontmatter(options.customTitle || title, url, site, options.tags, settings.addCreatedDate)
     : '';
 
-  const header = `# ${options.customTitle || title}\n\n> **来源：** [${url}](${url})\n\n---\n\n`;
+  const srcLabel = chrome.i18n.getMessage('bg_source_label');
+  const header = `# ${options.customTitle || title}\n\n> **${srcLabel}:** [${url}](${url})\n\n---\n\n`;
   const fullContent = frontmatter + header + finalMd;
 
   // Step 4: Save note to Obsidian
@@ -252,7 +253,7 @@ async function handleClip(tabId, options = {}) {
   try {
     await obsidianPut(filePath, fullContent, 'text/markdown', settings.apiKey, settings.port);
   } catch (err) {
-    return { success: false, error: `保存到 Obsidian 失败：${err.message}` };
+    return { success: false, error: chrome.i18n.getMessage('bg_save_failed', [err.message]) };
   }
 
   const imgSuccess = imageResults.filter(r => r.success).length;
@@ -277,7 +278,7 @@ async function ensureContentScript(tabId) {
     await chrome.scripting.executeScript({ target: { tabId }, files: ['content_script.js'] });
     await new Promise(r => setTimeout(r, 400));
   } catch (err) {
-    throw new Error(`无法注入脚本：${err.message}。请确认页面不是 Chrome 内置页面。`);
+    throw new Error(chrome.i18n.getMessage('bg_inject_failed', [err.message]));
   }
 }
 

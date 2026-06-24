@@ -804,7 +804,7 @@
         // Fallback to original DOM scroll approach
         const scrollResult = await scrollAndCollectAlidocs();
         if (!scrollResult || scrollResult.blocks.length === 0) {
-          return { success: false, error: '未找到文档内容。请确认文档已完全加载。' };
+          return { success: false, error: chrome.i18n.getMessage('cs_content_not_found') };
         }
         const { blocks } = scrollResult;
         const imageObjects = collectImages(blocks);

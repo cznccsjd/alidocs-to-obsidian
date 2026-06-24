@@ -53,7 +53,7 @@ function saveSettings() {
   };
 
   chrome.storage.local.set(settings, () => {
-    showStatus('success', '✅ 设置已保存！');
+    showStatus('success', chrome.i18n.getMessage('options_saved'));
     setTimeout(clearStatus, 3000);
   });
 }
@@ -61,11 +61,11 @@ function saveSettings() {
 // ─── Reset Settings ───────────────────────────────────────────────────────────
 
 function resetSettings() {
-  if (!confirm('确定要恢复默认设置吗？API Key 也会被清除。')) return;
+  if (!confirm(chrome.i18n.getMessage('options_reset_prompt'))) return;
 
   chrome.storage.local.set(DEFAULTS, () => {
     loadSettings();
-    showStatus('success', '✅ 已恢复默认设置');
+    showStatus('success', chrome.i18n.getMessage('options_reset_done'));
     setTimeout(clearStatus, 3000);
   });
 }
@@ -78,12 +78,12 @@ async function testConnection() {
 
   if (!apiKey) {
     elTestResult.className = 'test-result error';
-    elTestResult.textContent = '❌ 请先输入 API Key';
+    elTestResult.textContent = chrome.i18n.getMessage('options_test_no_api_key');
     return;
   }
 
   elTestResult.className = 'test-result';
-  elTestResult.textContent = '测试中...';
+  elTestResult.textContent = chrome.i18n.getMessage('options_testing');
 
   try {
     const result = await chrome.runtime.sendMessage({
@@ -94,14 +94,14 @@ async function testConnection() {
 
     if (result.success) {
       elTestResult.className = 'test-result success';
-      elTestResult.textContent = `✅ 连接成功！Obsidian Local REST API 正常运行`;
+      elTestResult.textContent = chrome.i18n.getMessage('options_test_success');
     } else {
       elTestResult.className = 'test-result error';
-      elTestResult.textContent = `❌ 连接失败 (${result.status || result.error || '无响应'})。确认 Obsidian 已打开且插件已启用。`;
+      elTestResult.textContent = chrome.i18n.getMessage('options_test_fail', [String(result.status || result.error || 'no response')]);
     }
   } catch (err) {
     elTestResult.className = 'test-result error';
-    elTestResult.textContent = `❌ 错误：${err.message}`;
+    elTestResult.textContent = chrome.i18n.getMessage('options_test_error', [err.message]);
   }
 }
 

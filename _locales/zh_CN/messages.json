@@ -1,0 +1,98 @@
+{
+  "appName": { "message": "AliDocs to Obsidian" },
+  "appDescription": { "message": "将阿里文档/钉钉文档完整保存到 Obsidian，保留格式、表格和图片。" },
+  "appActionTitle": { "message": "保存到 Obsidian" },
+
+  "popup_title": { "message": "保存到 Obsidian" },
+  "popup_no_api_key": { "message": "请先配置 Obsidian Local REST API 密钥" },
+  "popup_open_settings": { "message": "打开设置 →" },
+  "popup_loading": { "message": "加载中..." },
+  "popup_save_folder": { "message": "保存位置" },
+  "popup_file_name": { "message": "文件名（不含.md）" },
+  "popup_file_name_placeholder": { "message": "留空使用页面标题" },
+  "popup_tags": { "message": "标签（逗号分隔）" },
+  "popup_tags_placeholder": { "message": "clipping, 阅读" },
+  "popup_save_btn": { "message": "保存到 Obsidian" },
+  "popup_saving": { "message": "保存中..." },
+  "popup_step_extracting": { "message": "提取页面内容" },
+  "popup_step_downloading": { "message": "下载图片" },
+  "popup_step_saving": { "message": "保存到 Obsidian" },
+  "popup_checking_connection": { "message": "检测连接中..." },
+  "popup_connected": { "message": "Obsidian 已连接" },
+  "popup_disconnected": { "message": "Obsidian 未连接" },
+  "popup_connection_failed": { "message": "连接失败" },
+  "popup_load_failed": { "message": "加载失败" },
+  "popup_saved_with_images": { "message": "✅ 已保存！下载了 $imageSuccess$/$imageCount$ 张图片\n📁 $filePath$",
+    "placeholders": {
+      "imageSuccess": { "content": "$1" },
+      "imageCount": { "content": "$2" },
+      "filePath": { "content": "$3" }
+    }
+  },
+  "popup_saved_no_images": { "message": "✅ 已保存！\n📁 $filePath$",
+    "placeholders": { "filePath": { "content": "$1" } }
+  },
+  "popup_save_failed": { "message": "❌ 保存失败：$error$",
+    "placeholders": { "error": { "content": "$1" } }
+  },
+  "popup_error": { "message": "❌ 错误：$message$",
+    "placeholders": { "message": { "content": "$1" } }
+  },
+
+  "options_title": { "message": "AliDocs to Obsidian - 设置" },
+  "options_subtitle": { "message": "将网页内容保存到 Obsidian，保留完整格式" },
+  "options_connection_settings": { "message": "🔌 Obsidian 连接设置" },
+  "options_api_key_label": { "message": "Local REST API 密钥" },
+  "options_api_key_placeholder": { "message": "粘贴你的 API Key 到这里" },
+  "options_api_key_help1": { "message": "在 Obsidian → 设置 → Community Plugins → Local REST API 中找到 API Key。" },
+  "options_api_key_help2": { "message": "确保插件已启用。" },
+  "options_port_label": { "message": "端口" },
+  "options_port_help": { "message": "默认端口 $port$，无需修改",
+    "placeholders": { "port": { "content": "27123" } }
+  },
+  "options_test_connection": { "message": "测试连接" },
+  "options_test_prompt": { "message": "点击"测试连接"验证" },
+  "options_save_settings": { "message": "📁 保存设置" },
+  "options_default_folder": { "message": "默认保存文件夹" },
+  "options_default_folder_help": { "message": "在 Obsidian Vault 内的文件夹路径。例如 $examples$",
+    "placeholders": { "examples": { "content": "Clippings 或 Inbox/网页" } }
+  },
+  "options_attachments_folder": { "message": "图片附件文件夹" },
+  "options_attachments_folder_help": { "message": "下载的图片保存位置。例如 $examples$",
+    "placeholders": { "examples": { "content": "Clippings/attachments 或 Resources" } }
+  },
+  "options_note_options": { "message": "📋 笔记选项" },
+  "options_add_frontmatter": { "message": "添加 Frontmatter" },
+  "options_add_frontmatter_help": { "message": "自动添加 YAML 元数据（标题、来源、日期）" },
+  "options_add_created_date": { "message": "添加创建日期" },
+  "options_add_created_date_help": { "message": "在 Frontmatter 中记录保存时间" },
+  "options_reset_default": { "message": "恢复默认" },
+  "options_save_btn": { "message": "保存设置" },
+  "options_saved": { "message": "✅ 设置已保存！" },
+  "options_reset_prompt": { "message": "确定要恢复默认设置吗？API Key 也会被清除。" },
+  "options_reset_done": { "message": "✅ 已恢复默认设置" },
+  "options_test_no_api_key": { "message": "❌ 请先输入 API Key" },
+  "options_testing": { "message": "测试中..." },
+  "options_test_success": { "message": "✅ 连接成功！Obsidian Local REST API 正常运行" },
+  "options_test_fail": { "message": "❌ 连接失败 ($status$)。确认 Obsidian 已打开且插件已启用。",
+    "placeholders": { "status": { "content": "$1" } }
+  },
+  "options_test_error": { "message": "❌ 错误：$message$",
+    "placeholders": { "message": { "content": "$1" } }
+  },
+
+  "bg_no_api_key": { "message": "API Key 未设置。请打开扩展设置页面配置。" },
+  "bg_extract_failed": { "message": "提取内容失败：$message$",
+    "placeholders": { "message": { "content": "$1" } }
+  },
+  "bg_extract_failed_generic": { "message": "提取失败" },
+  "bg_source_label": { "message": "来源" },
+  "bg_save_failed": { "message": "保存到 Obsidian 失败：$message$",
+    "placeholders": { "message": { "content": "$1" } }
+  },
+  "bg_inject_failed": { "message": "无法注入脚本：$message$。请确认页面不是 Chrome 内置页面。",
+    "placeholders": { "message": { "content": "$1" } }
+  },
+
+  "cs_content_not_found": { "message": "未找到文档内容。请确认文档已完全加载。" }
+}

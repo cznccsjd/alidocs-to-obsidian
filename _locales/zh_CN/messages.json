@@ -51,7 +51,7 @@
     "placeholders": { "port": { "content": "27123" } }
   },
   "options_test_connection": { "message": "测试连接" },
-  "options_test_prompt": { "message": "点击"测试连接"验证" },
+  "options_test_prompt": { "message": "点击「测试连接」验证" },
   "options_save_settings": { "message": "📁 保存设置" },
   "options_default_folder": { "message": "默认保存文件夹" },
   "options_default_folder_help": { "message": "在 Obsidian Vault 内的文件夹路径。例如 $examples$",

@@ -1,5 +1,5 @@
 /**
- * Obsidian Web Clipper - Popup Script
+ * AliDocs to Obsidian - Popup Script
  */
 
 'use strict';

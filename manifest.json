@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Obsidian Web Clipper",
+  "name": "AliDocs to Obsidian",
   "version": "1.0.0",
-  "description": "Save web documents to Obsidian with full formatting, tables, and images. Supports AliDocs, DingTalk, and generic web pages.",
+  "description": "Clip AliDocs/DingTalk documents to Obsidian with full formatting, tables, and images.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -10,7 +10,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Save to Obsidian"
+    "default_title": "AliDocs to Obsidian"
   },
   "options_page": "options.html",
   "background": {

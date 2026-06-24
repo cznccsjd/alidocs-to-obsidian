@@ -1,5 +1,5 @@
 /**
- * Obsidian Web Clipper - Options Script
+ * AliDocs to Obsidian - Options Script
  */
 
 'use strict';

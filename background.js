@@ -1,5 +1,5 @@
 /**
- * Obsidian Web Clipper - Background Service Worker v2.0
+ * AliDocs to Obsidian - Background Service Worker v2.0
  *
  * Handles: Obsidian REST API calls, image writing, message routing.
  * Images are now pre-fetched (with auth cookies) by the content script

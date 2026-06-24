@@ -1,5 +1,5 @@
 /**
- * Obsidian Web Clipper - Content Script v4.0
+ * AliDocs to Obsidian - Content Script v4.0
  *
  * AliDocs DOM structure (confirmed via live inspection):
  *

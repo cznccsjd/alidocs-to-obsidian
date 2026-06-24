@@ -1,0 +1,17 @@
+# Chrome Extension — NEVER commit private key
+*.pem
+*.crx
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+
+# Claude Code
+.claude/

@@ -13,5 +13,7 @@ Thumbs.db
 # Environment
 .env
 
-# Claude Code
+# Claude Code & AI generated
 .claude/
+.agents/
+code review/

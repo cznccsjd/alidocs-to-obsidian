@@ -295,60 +295,60 @@
       <div class="header-logo">📝</div>
       <div>
         <div class="header-title">AliDocs to Obsidian</div>
-        <div class="header-subtitle">__MSG_options_subtitle__</div>
+        <div class="header-subtitle" data-i18n="options_subtitle"></div>
       </div>
     </div>
 
     <!-- Obsidian Connection -->
     <div class="card">
-      <div class="card-title">__MSG_options_connection_settings__</div>
+      <div class="card-title" data-i18n="options_connection_settings"></div>
 
       <div class="field-group">
-        <div class="field-label">__MSG_options_api_key_label__</div>
-        <input type="password" class="field-input" id="apiKey" placeholder="__MSG_options_api_key_placeholder__">
+        <div class="field-label" data-i18n="options_api_key_label"></div>
+        <input type="password" class="field-input" id="apiKey" data-i18n-placeholder="options_api_key_placeholder">
         <div class="field-help">
-          __MSG_options_api_key_help1__
-          __MSG_options_api_key_help2__
+          <span data-i18n="options_api_key_help1"></span>
+          <span data-i18n="options_api_key_help2"></span>
         </div>
       </div>
 
       <div class="field-group">
-        <div class="field-label">__MSG_options_port_label__</div>
+        <div class="field-label" data-i18n="options_port_label"></div>
         <input type="number" class="field-input" id="port" placeholder="27123" value="27123" style="width: 120px">
-        <div class="field-help">__MSG_options_port_help__</div>
+        <div class="field-help" data-i18n="options_port_help"></div>
       </div>
 
       <div class="test-row">
-        <button class="btn btn-secondary" id="btnTest">__MSG_options_test_connection__</button>
-        <div class="test-result" id="testResult">__MSG_options_test_prompt__</div>
+        <button class="btn btn-secondary" id="btnTest" data-i18n="options_test_connection"></button>
+        <div class="test-result" id="testResult" data-i18n="options_test_prompt"></div>
       </div>
     </div>
 
     <!-- Save Settings -->
     <div class="card">
-      <div class="card-title">__MSG_options_save_settings__</div>
+      <div class="card-title" data-i18n="options_save_settings"></div>
 
       <div class="field-group">
-        <div class="field-label">__MSG_options_default_folder__</div>
+        <div class="field-label" data-i18n="options_default_folder"></div>
         <input type="text" class="field-input" id="saveFolder" placeholder="Clippings">
-        <div class="field-help">__MSG_options_default_folder_help__</div>
+        <div class="field-help" data-i18n="options_default_folder_help"></div>
       </div>
 
       <div class="field-group">
-        <div class="field-label">__MSG_options_attachments_folder__</div>
+        <div class="field-label" data-i18n="options_attachments_folder"></div>
         <input type="text" class="field-input" id="attachmentsFolder" placeholder="Clippings/attachments">
-        <div class="field-help">__MSG_options_attachments_folder_help__</div>
+        <div class="field-help" data-i18n="options_attachments_folder_help"></div>
       </div>
     </div>
 
     <!-- Note Options -->
     <div class="card">
-      <div class="card-title">__MSG_options_note_options__</div>
+      <div class="card-title" data-i18n="options_note_options"></div>
 
       <div class="toggle-row">
         <div>
-          <div class="toggle-label">__MSG_options_add_frontmatter__</div>
-          <div class="toggle-sublabel">__MSG_options_add_frontmatter_help__</div>
+          <div class="toggle-label" data-i18n="options_add_frontmatter"></div>
+          <div class="toggle-sublabel" data-i18n="options_add_frontmatter_help"></div>
         </div>
         <label class="toggle">
           <input type="checkbox" id="addFrontmatter">
@@ -360,8 +360,8 @@
 
       <div class="toggle-row">
         <div>
-          <div class="toggle-label">__MSG_options_add_created_date__</div>
-          <div class="toggle-sublabel">__MSG_options_add_created_date_help__</div>
+          <div class="toggle-label" data-i18n="options_add_created_date"></div>
+          <div class="toggle-sublabel" data-i18n="options_add_created_date_help"></div>
         </div>
         <label class="toggle">
           <input type="checkbox" id="addCreatedDate">
@@ -372,13 +372,14 @@
 
     <!-- Buttons -->
     <div class="btn-row">
-      <button class="btn btn-secondary" id="btnReset">__MSG_options_reset_default__</button>
-      <button class="btn btn-primary" id="btnSave">__MSG_options_save_btn__</button>
+      <button class="btn btn-secondary" id="btnReset" data-i18n="options_reset_default"></button>
+      <button class="btn btn-primary" id="btnSave" data-i18n="options_save_btn"></button>
     </div>
 
     <div class="status-bar" id="statusBar"></div>
   </div>
 
+  <script src="i18n.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

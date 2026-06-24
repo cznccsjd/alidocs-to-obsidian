@@ -293,15 +293,15 @@
 <body>
   <div class="header">
     <div class="header-logo">📝</div>
-    <div class="header-title">__MSG_popup_title__</div>
-    <div class="header-settings" id="btnSettings" title="Settings">⚙️</div>
+    <div class="header-title" data-i18n="popup_title"></div>
+    <div class="header-settings" id="btnSettings" data-i18n-title="options_title">⚙️</div>
   </div>
 
   <!-- No API key state -->
   <div class="no-api-key" id="noApiKey" style="display:none">
-    <p>__MSG_popup_no_api_key__</p>
+    <p data-i18n="popup_no_api_key"></p>
     <br>
-    <p><a href="#" id="openOptions">__MSG_popup_open_settings__</a></p>
+    <p><a href="#" id="openOptions" data-i18n="popup_open_settings"></a></p>
   </div>
 
   <!-- Main UI -->
@@ -309,39 +309,39 @@
     <!-- Page info -->
     <div class="page-info">
       <div class="site-badge" id="siteBadge">generic</div>
-      <div class="page-title" id="pageTitle">__MSG_popup_loading__</div>
+      <div class="page-title" id="pageTitle" data-i18n="popup_loading"></div>
       <div class="page-url" id="pageUrl"></div>
     </div>
 
     <!-- Save folder -->
     <div class="field-group">
-      <div class="field-label">__MSG_popup_save_folder__</div>
+      <div class="field-label" data-i18n="popup_save_folder"></div>
       <input type="text" class="field-input" id="saveFolder" placeholder="Clippings">
     </div>
 
     <!-- Custom title -->
     <div class="field-group">
-      <div class="field-label">__MSG_popup_file_name__</div>
-      <input type="text" class="field-input" id="customTitle" placeholder="__MSG_popup_file_name_placeholder__">
+      <div class="field-label" data-i18n="popup_file_name"></div>
+      <input type="text" class="field-input" id="customTitle" data-i18n-placeholder="popup_file_name_placeholder">
     </div>
 
     <!-- Tags -->
     <div class="field-group">
-      <div class="field-label">__MSG_popup_tags__</div>
-      <input type="text" class="field-input tags-input" id="tagsInput" placeholder="__MSG_popup_tags_placeholder__">
+      <div class="field-label" data-i18n="popup_tags"></div>
+      <input type="text" class="field-input tags-input" id="tagsInput" data-i18n-placeholder="popup_tags_placeholder">
     </div>
 
     <!-- Save button -->
     <button class="btn-save" id="btnSave">
       <span id="btnIcon">💾</span>
-      <span id="btnText">__MSG_popup_save_btn__</span>
+      <span id="btnText" data-i18n="popup_save_btn"></span>
     </button>
 
     <!-- Progress -->
     <div class="progress-steps" id="progressSteps">
-      <div class="step" id="step1"><span class="step-icon">⬜</span> __MSG_popup_step_extracting__</div>
-      <div class="step" id="step2"><span class="step-icon">⬜</span> __MSG_popup_step_downloading__</div>
-      <div class="step" id="step3"><span class="step-icon">⬜</span> __MSG_popup_step_saving__</div>
+      <div class="step" id="step1"><span class="step-icon">⬜</span> <span data-i18n="popup_step_extracting"></span></div>
+      <div class="step" id="step2"><span class="step-icon">⬜</span> <span data-i18n="popup_step_downloading"></span></div>
+      <div class="step" id="step3"><span class="step-icon">⬜</span> <span data-i18n="popup_step_saving"></span></div>
     </div>
 
     <!-- Status -->
@@ -351,10 +351,11 @@
   <div class="footer">
     <div class="conn-indicator">
       <div class="conn-dot" id="connDot"></div>
-      <span id="connText">__MSG_popup_checking_connection__</span>
+      <span id="connText" data-i18n="popup_checking_connection"></span>
     </div>
   </div>
 
+  <script src="i18n.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

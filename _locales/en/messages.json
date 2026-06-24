@@ -1,98 +1,260 @@
 {
-  "appName": { "message": "AliDocs to Obsidian" },
-  "appDescription": { "message": "Clip AliDocs/DingTalk documents to Obsidian with full formatting, tables, and images." },
-  "appActionTitle": { "message": "AliDocs to Obsidian" },
-
-  "popup_title": { "message": "AliDocs to Obsidian" },
-  "popup_no_api_key": { "message": "Please configure your Obsidian Local REST API key first." },
-  "popup_open_settings": { "message": "Open Settings →" },
-  "popup_loading": { "message": "Loading..." },
-  "popup_save_folder": { "message": "Save to" },
-  "popup_file_name": { "message": "File name (without .md)" },
-  "popup_file_name_placeholder": { "message": "Leave empty to use page title" },
-  "popup_tags": { "message": "Tags (comma separated)" },
-  "popup_tags_placeholder": { "message": "clipping, reading" },
-  "popup_save_btn": { "message": "Save to Obsidian" },
-  "popup_saving": { "message": "Saving..." },
-  "popup_step_extracting": { "message": "Extracting content" },
-  "popup_step_downloading": { "message": "Downloading images" },
-  "popup_step_saving": { "message": "Saving to Obsidian" },
-  "popup_checking_connection": { "message": "Checking connection..." },
-  "popup_connected": { "message": "Connected" },
-  "popup_disconnected": { "message": "Disconnected" },
-  "popup_connection_failed": { "message": "Connection failed" },
-  "popup_load_failed": { "message": "Failed to load" },
-  "popup_saved_with_images": { "message": "✅ Saved! Downloaded $imageSuccess$/$imageCount$ images\n📁 $filePath$",
+  "appName": {
+    "message": "AliDocs to Obsidian"
+  },
+  "appDescription": {
+    "message": "Clip AliDocs/DingTalk documents to Obsidian with full formatting, tables, and images."
+  },
+  "appActionTitle": {
+    "message": "AliDocs to Obsidian"
+  },
+  "popup_title": {
+    "message": "AliDocs to Obsidian"
+  },
+  "popup_no_api_key": {
+    "message": "Please configure your Obsidian Local REST API key first."
+  },
+  "popup_open_settings": {
+    "message": "Open Settings →"
+  },
+  "popup_loading": {
+    "message": "Loading..."
+  },
+  "popup_save_folder": {
+    "message": "Save to"
+  },
+  "popup_file_name": {
+    "message": "File name (without .md)"
+  },
+  "popup_file_name_placeholder": {
+    "message": "Leave empty to use page title"
+  },
+  "popup_tags": {
+    "message": "Tags (comma separated)"
+  },
+  "popup_tags_placeholder": {
+    "message": "clipping, reading"
+  },
+  "popup_save_btn": {
+    "message": "Save to Obsidian"
+  },
+  "popup_saving": {
+    "message": "Saving..."
+  },
+  "popup_step_extracting": {
+    "message": "Extracting content"
+  },
+  "popup_step_downloading": {
+    "message": "Downloading images"
+  },
+  "popup_step_saving": {
+    "message": "Saving to Obsidian"
+  },
+  "popup_checking_connection": {
+    "message": "Checking connection..."
+  },
+  "popup_connected": {
+    "message": "Connected"
+  },
+  "popup_disconnected": {
+    "message": "Disconnected"
+  },
+  "popup_connection_failed": {
+    "message": "Connection failed"
+  },
+  "popup_load_failed": {
+    "message": "Failed to load"
+  },
+  "popup_saved_with_images": {
+    "message": "✅ Saved! Downloaded $imageSuccess$/$imageCount$ images\n📁 $filePath$",
     "placeholders": {
-      "imageSuccess": { "content": "$1" },
-      "imageCount": { "content": "$2" },
-      "filePath": { "content": "$3" }
+      "imageSuccess": {
+        "content": "$1"
+      },
+      "imageCount": {
+        "content": "$2"
+      },
+      "filePath": {
+        "content": "$3"
+      }
     }
   },
-  "popup_saved_no_images": { "message": "✅ Saved!\n📁 $filePath$",
-    "placeholders": { "filePath": { "content": "$1" } }
+  "popup_saved_no_images": {
+    "message": "✅ Saved!\n📁 $filePath$",
+    "placeholders": {
+      "filePath": {
+        "content": "$1"
+      }
+    }
   },
-  "popup_save_failed": { "message": "❌ Save failed: $error$",
-    "placeholders": { "error": { "content": "$1" } }
+  "popup_save_failed": {
+    "message": "❌ Save failed: $error$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
   },
-  "popup_error": { "message": "❌ Error: $message$",
-    "placeholders": { "message": { "content": "$1" } }
+  "popup_error": {
+    "message": "❌ Error: $message$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
   },
-
-  "options_title": { "message": "AliDocs to Obsidian - Settings" },
-  "options_subtitle": { "message": "Save web content to Obsidian with full formatting" },
-  "options_connection_settings": { "message": "🔌 Obsidian Connection Settings" },
-  "options_api_key_label": { "message": "Local REST API Key" },
-  "options_api_key_placeholder": { "message": "Paste your API Key here" },
-  "options_api_key_help1": { "message": "Find the API Key in Obsidian → Settings → Community Plugins → Local REST API." },
-  "options_api_key_help2": { "message": "Make sure the plugin is enabled." },
-  "options_port_label": { "message": "Port" },
-  "options_port_help": { "message": "Default port is $port$, no need to change",
-    "placeholders": { "port": { "content": "27123" } }
+  "options_title": {
+    "message": "AliDocs to Obsidian - Settings"
   },
-  "options_test_connection": { "message": "Test Connection" },
-  "options_test_prompt": { "message": "Click \"Test Connection\" to verify" },
-  "options_save_settings": { "message": "📁 Save Settings" },
-  "options_default_folder": { "message": "Default save folder" },
-  "options_default_folder_help": { "message": "Folder path inside your Obsidian Vault. e.g. $examples$",
-    "placeholders": { "examples": { "content": "Clippings or Inbox/Web" } }
+  "options_subtitle": {
+    "message": "Save web content to Obsidian with full formatting"
   },
-  "options_attachments_folder": { "message": "Image attachments folder" },
-  "options_attachments_folder_help": { "message": "Where downloaded images are saved. e.g. $examples$",
-    "placeholders": { "examples": { "content": "Clippings/attachments or Resources" } }
+  "options_connection_settings": {
+    "message": "🔌 Obsidian Connection Settings"
   },
-  "options_note_options": { "message": "📋 Note Options" },
-  "options_add_frontmatter": { "message": "Add Frontmatter" },
-  "options_add_frontmatter_help": { "message": "Automatically add YAML metadata (title, source, date)" },
-  "options_add_created_date": { "message": "Add created date" },
-  "options_add_created_date_help": { "message": "Record save time in frontmatter" },
-  "options_reset_default": { "message": "Reset to Default" },
-  "options_save_btn": { "message": "Save Settings" },
-  "options_saved": { "message": "✅ Settings saved!" },
-  "options_reset_prompt": { "message": "Are you sure you want to reset to default settings? The API Key will also be cleared." },
-  "options_reset_done": { "message": "✅ Reset to default settings" },
-  "options_test_no_api_key": { "message": "❌ Please enter an API Key first" },
-  "options_testing": { "message": "Testing..." },
-  "options_test_success": { "message": "✅ Connection successful! Obsidian Local REST API is running." },
-  "options_test_fail": { "message": "❌ Connection failed ($status$). Make sure Obsidian is open and the plugin is enabled.",
-    "placeholders": { "status": { "content": "$1" } }
+  "options_api_key_label": {
+    "message": "Local REST API Key"
   },
-  "options_test_error": { "message": "❌ Error: $message$",
-    "placeholders": { "message": { "content": "$1" } }
+  "options_api_key_placeholder": {
+    "message": "Paste your API Key here"
   },
-
-  "bg_no_api_key": { "message": "API Key not configured. Please open the extension settings." },
-  "bg_extract_failed": { "message": "Failed to extract content: $message$",
-    "placeholders": { "message": { "content": "$1" } }
+  "options_api_key_help1": {
+    "message": "Find the API Key in Obsidian → Settings → Community Plugins → Local REST API."
   },
-  "bg_extract_failed_generic": { "message": "Extraction failed" },
-  "bg_source_label": { "message": "Source" },
-  "bg_save_failed": { "message": "Failed to save to Obsidian: $message$",
-    "placeholders": { "message": { "content": "$1" } }
+  "options_api_key_help2": {
+    "message": "Make sure the plugin is enabled."
   },
-  "bg_inject_failed": { "message": "Failed to inject script: $message$. Make sure the page is not a Chrome internal page.",
-    "placeholders": { "message": { "content": "$1" } }
+  "options_port_label": {
+    "message": "Port"
   },
-
-  "cs_content_not_found": { "message": "Document content not found. Please make sure the document has fully loaded." }
+  "options_port_help": {
+    "message": "Default port is $port$, no need to change",
+    "placeholders": {
+      "port": {
+        "content": "27123"
+      }
+    }
+  },
+  "options_test_connection": {
+    "message": "Test Connection"
+  },
+  "options_test_prompt": {
+    "message": "Click \"Test Connection\" to verify"
+  },
+  "options_save_settings": {
+    "message": "📁 Save Settings"
+  },
+  "options_default_folder": {
+    "message": "Default save folder"
+  },
+  "options_default_folder_help": {
+    "message": "Folder path inside your Obsidian Vault. e.g. $examples$",
+    "placeholders": {
+      "examples": {
+        "content": "Clippings or Inbox/Web"
+      }
+    }
+  },
+  "options_attachments_folder": {
+    "message": "Image attachments folder"
+  },
+  "options_attachments_folder_help": {
+    "message": "Where downloaded images are saved. e.g. $examples$",
+    "placeholders": {
+      "examples": {
+        "content": "Clippings/attachments or Resources"
+      }
+    }
+  },
+  "options_note_options": {
+    "message": "📋 Note Options"
+  },
+  "options_add_frontmatter": {
+    "message": "Add Frontmatter"
+  },
+  "options_add_frontmatter_help": {
+    "message": "Automatically add YAML metadata (title, source, date)"
+  },
+  "options_add_created_date": {
+    "message": "Add created date"
+  },
+  "options_add_created_date_help": {
+    "message": "Record save time in frontmatter"
+  },
+  "options_reset_default": {
+    "message": "Reset to Default"
+  },
+  "options_save_btn": {
+    "message": "Save Settings"
+  },
+  "options_saved": {
+    "message": "✅ Settings saved!"
+  },
+  "options_reset_prompt": {
+    "message": "Are you sure you want to reset to default settings? The API Key will also be cleared."
+  },
+  "options_reset_done": {
+    "message": "✅ Reset to default settings"
+  },
+  "options_test_no_api_key": {
+    "message": "❌ Please enter an API Key first"
+  },
+  "options_testing": {
+    "message": "Testing..."
+  },
+  "options_test_success": {
+    "message": "✅ Connection successful! Obsidian Local REST API is running."
+  },
+  "options_test_fail": {
+    "message": "❌ Connection failed ($status$). Make sure Obsidian is open and the plugin is enabled.",
+    "placeholders": {
+      "status": {
+        "content": "$1"
+      }
+    }
+  },
+  "options_test_error": {
+    "message": "❌ Error: $message$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "bg_no_api_key": {
+    "message": "API Key not configured. Please open the extension settings."
+  },
+  "bg_extract_failed": {
+    "message": "Failed to extract content: $message$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "bg_extract_failed_generic": {
+    "message": "Extraction failed"
+  },
+  "bg_source_label": {
+    "message": "Source"
+  },
+  "bg_save_failed": {
+    "message": "Failed to save to Obsidian: $message$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "bg_inject_failed": {
+    "message": "Failed to inject script: $message$. Make sure the page is not a Chrome internal page.",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "cs_content_not_found": {
+    "message": "Document content not found. Please make sure the document has fully loaded."
+  }
 }

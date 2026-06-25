@@ -21,7 +21,20 @@ async function getSettings() {
       port: DEFAULT_PORT,
       addFrontmatter: true,
       addCreatedDate: true,
-    }, resolve);
+    }, (settings) => {
+      // One-time migration: if local has no apiKey, pull from sync (old storage)
+      if (!settings.apiKey) {
+        chrome.storage.sync.get({ apiKey: '' }, (sync) => {
+          if (sync.apiKey) {
+            settings.apiKey = sync.apiKey;
+            chrome.storage.local.set({ apiKey: sync.apiKey });
+          }
+          resolve(settings);
+        });
+      } else {
+        resolve(settings);
+      }
+    });
   });
 }
 

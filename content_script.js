@@ -463,6 +463,7 @@
 
     // ── Attempt 1: XHR from content script (host_permissions <all_urls> bypasses CORS,
     //              withCredentials auto-sends browser cookies for CDN auth) ──
+    let xhrErrorMessage = 'unknown error';
     try {
       const result = await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -487,10 +488,11 @@
       console.log(`[content] XHR OK → mime=${result.mimeType} | src: ${src.substring(0, 80)}`);
       return result;
     } catch (xhrErr) {
-      logErr('XHR', xhrErr.message);
+      xhrErrorMessage = xhrErr.message;
+      logErr('XHR', xhrErrorMessage);
     }
 
-    throw new Error('XHR failed: ' + xhrErr.message);
+    throw new Error('XHR failed: ' + xhrErrorMessage);
   }
 
   async function fetchAllImages(images) {

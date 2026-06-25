@@ -27,7 +27,7 @@
         "https://docs.google.com/*",
         "https://*.feishu.cn/*",
         "https://*.larksuite.com/*",
-        "<all_urls>"
+        "https://*/*"
       ],
       "js": ["content_script.js"],
       "run_at": "document_idle",

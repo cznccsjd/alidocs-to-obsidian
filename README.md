@@ -1,5 +1,7 @@
 # AliDocs to Obsidian
 
+English | [简体中文](README.zh-CN.md)
+
 A Chrome extension that clips AliDocs/DingTalk documents directly into your Obsidian vault — preserving full formatting, tables, and images (stored locally).
 
 Based on [memoricry88/obsidian-alidocs-clipper](https://github.com/memoricry88/obsidian-alidocs-clipper).

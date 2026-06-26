@@ -16,7 +16,7 @@ Based on [memoricry88/obsidian-alidocs-clipper](https://github.com/memoricry88/o
 - ⚙️ Configurable via options page (API key, save folder, attachments folder)
 
 ## Requirements
-- [Obsidian Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) plugin installed and running
+- [Local REST API with MCP](https://github.com/coddingtonbear/obsidian-local-rest-api) plugin installed and running in Obsidian
 - Chrome browser
 
 ## Installation
@@ -28,6 +28,15 @@ Based on [memoricry88/obsidian-alidocs-clipper](https://github.com/memoricry88/o
 
 ## Usage
 Navigate to any AliDocs / DingTalk document and click the extension icon to clip it to Obsidian.
+
+## Troubleshooting
+
+### Can't find the REST API plugin in Obsidian
+
+1. Go to **Settings → Community Plugins** in Obsidian
+2. Turn off **Restricted Mode** (if enabled, community plugins are hidden)
+3. Click **Browse** and search for **"Local REST API"** or author **"Adam Coddington"**
+4. Install and enable it — the API Key appears in the plugin's settings section
 
 ## Changes from upstream
 - Replaced DOM virtual-scroll extraction with AliDocs API (`/api/document/data`) — full text coverage

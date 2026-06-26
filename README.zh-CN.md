@@ -19,7 +19,7 @@
 ## 安装
 
 ### 前置要求
-- [Obsidian Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) 插件已安装并运行
+- 在 Obsidian 中安装并运行 [Local REST API with MCP](https://github.com/coddingtonbear/obsidian-local-rest-api) 插件
 - Chrome 浏览器
 
 ### Chrome 扩展安装
@@ -30,13 +30,22 @@
 5. 打开扩展选项，填入 Obsidian Local REST API 密钥
 
 ### Obsidian 配置
-1. 安装 [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) 插件
+1. 安装 [Local REST API with MCP](https://github.com/coddingtonbear/obsidian-local-rest-api) 插件
 2. 启用插件，记下生成的 API Key
 3. 确保端口为默认的 `27123`（一般无需修改）
 
 ## 使用
 
 在任意阿里文档/钉钉文档页面点击扩展图标即可剪藏到 Obsidian。
+
+## 常见问题
+
+### 在 Obsidian 插件库里找不到 REST API 插件
+
+1. 打开 Obsidian → **设置 → 社区插件**
+2. 关掉 **安全模式（Restricted Mode）**——开启状态下社区插件会被隐藏
+3. 点击 **浏览**，搜索 **"Local REST API"** 或作者 **"Adam Coddington"**
+4. 安装并启用，插件的设置页面会显示 API Key
 
 ## 与上游项目的差异
 

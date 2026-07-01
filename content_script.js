@@ -627,16 +627,15 @@
     return stripInvisibleChars(parts.join(''));
   }
 
-  function getTextWithFormatting(node, text) {
-    // node[1] is props: {bold, strike, italic, underline, highlight, color, sz, "data-type":"leaf"}
-    const props = (Array.isArray(node) && typeof node[1] === 'object' && !Array.isArray(node[1])) ? node[1] : {};
-    if (props['data-type'] !== 'leaf') return stripInvisibleChars(text);
-    let out = text;
+  function applyInlineFormatting(props, text) {
+    const cleaned = stripInvisibleChars(text);
+    if (!cleaned) return ''; // don't emit orphan markdown markers for invisible-only text
+    let out = cleaned;
     if (props.strike) out = '~~' + out + '~~';
     if (props.bold) out = '**' + out + '**';
     if (props.italic) out = '*' + out + '*';
     if (props.underline) out = '<u>' + out + '</u>';
-    return stripInvisibleChars(out);
+    return out;
   }
 
   function stripInvisibleChars(text) {
@@ -652,9 +651,10 @@
         // ["span", {data-type:"text"}, ["span", {bold,strike,..., data-type:"leaf"}, "text"]]
         const props = (node.length > 1 && typeof node[1] === 'object' && !Array.isArray(node[1])) ? node[1] : {};
         if (props['data-type'] === 'leaf') {
-          // This is a leaf span — get text and apply formatting
-          const text = node[2] || '';
-          parts.push(getTextWithFormatting(node, text));
+          // Collect all children (text, br, img, etc.) then apply inline formatting
+          const childParts = [];
+          for (let i = 2; i < node.length; i++) walkBlockChild(node[i], childParts);
+          parts.push(applyInlineFormatting(props, childParts.join('')));
         } else {
           for (let i = 1; i < node.length; i++) walkBlockChild(node[i], parts);
         }

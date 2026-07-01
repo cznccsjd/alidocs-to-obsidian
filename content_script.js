@@ -627,9 +627,19 @@
     return stripInvisibleChars(parts.join(''));
   }
 
+  function getInlineFormatKey(props) {
+    // Return a key that uniquely identifies the formatting combination
+    return [
+      props.strike ? 's' : '',
+      props.bold ? 'b' : '',
+      props.italic ? 'i' : '',
+      props.underline ? 'u' : '',
+    ].join('');
+  }
+
   function applyInlineFormatting(props, text) {
     const cleaned = stripInvisibleChars(text);
-    if (!cleaned) return ''; // don't emit orphan markdown markers for invisible-only text
+    if (!cleaned) return '';
     let out = cleaned;
     if (props.strike) out = '~~' + out + '~~';
     if (props.bold) out = '**' + out + '**';
@@ -642,16 +652,49 @@
     return text.replace(INVISIBLE_CHARS, '');
   }
 
+  function flushRuns(runs, parts) {
+    for (const run of runs) {
+      parts.push(applyInlineFormatting(run.props, run.text));
+    }
+    runs.length = 0; // clear in-place
+  }
+
   function walkBlockChild(node, parts) {
     if (typeof node === 'string') { parts.push(node); return; }
     if (!Array.isArray(node)) return;
     const type = node[0];
     switch (type) {
       case 'span': {
-        // ["span", {data-type:"text"}, ["span", {bold,strike,..., data-type:"leaf"}, "text"]]
         const props = (node.length > 1 && typeof node[1] === 'object' && !Array.isArray(node[1])) ? node[1] : {};
-        if (props['data-type'] === 'leaf') {
-          // Collect all children (text, br, img, etc.) then apply inline formatting
+        if (props['data-type'] === 'text') {
+          // Parent text span: collect leaf children as runs, merge adjacent same-format,
+          // then render. Prevents ~~url_part1~~~~url_part2~~ for split URL spans.
+          const runs = [];
+          for (let i = 1; i < node.length; i++) {
+            if (Array.isArray(node[i]) && node[i][0] === 'span'
+                && node[i][1] && typeof node[i][1] === 'object' && node[i][1]['data-type'] === 'leaf') {
+              const leafProps = node[i][1];
+              const childParts = [];
+              for (let j = 2; j < node[i].length; j++) walkBlockChild(node[i][j], childParts);
+              const text = stripInvisibleChars(childParts.join(''));
+              if (text) {
+                const fmtKey = getInlineFormatKey(leafProps);
+                // Merge with previous run if format matches
+                if (runs.length > 0 && runs[runs.length - 1].fmtKey === fmtKey) {
+                  runs[runs.length - 1].text += text;
+                } else {
+                  runs.push({ text, props: leafProps, fmtKey });
+                }
+              }
+            } else {
+              // Non-leaf child (br, img, plain text, nested spans) — flush runs first
+              flushRuns(runs, parts);
+              walkBlockChild(node[i], parts);
+            }
+          }
+          flushRuns(runs, parts);
+        } else if (props['data-type'] === 'leaf') {
+          // Standalone leaf span (uncommon outside parent text span)
           const childParts = [];
           for (let i = 2; i < node.length; i++) walkBlockChild(node[i], childParts);
           parts.push(applyInlineFormatting(props, childParts.join('')));

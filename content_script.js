@@ -624,7 +624,23 @@
     for (let i = (typeof block[1] === 'object' && !Array.isArray(block[1]) ? 2 : 1); i < block.length; i++) {
       walkBlockChild(block[i], parts);
     }
-    return parts.join('').replace(/[​-‏‪-‮⁠-⁤⁪-⁯﻿­]/g, '');
+    return stripInvisibleChars(parts.join(''));
+  }
+
+  function getTextWithFormatting(node, text) {
+    // node[1] is props: {bold, strike, italic, underline, highlight, color, sz, "data-type":"leaf"}
+    const props = (Array.isArray(node) && typeof node[1] === 'object' && !Array.isArray(node[1])) ? node[1] : {};
+    if (props['data-type'] !== 'leaf') return stripInvisibleChars(text);
+    let out = text;
+    if (props.strike) out = '~~' + out + '~~';
+    if (props.bold) out = '**' + out + '**';
+    if (props.italic) out = '*' + out + '*';
+    if (props.underline) out = '<u>' + out + '</u>';
+    return stripInvisibleChars(out);
+  }
+
+  function stripInvisibleChars(text) {
+    return text.replace(INVISIBLE_CHARS, '');
   }
 
   function walkBlockChild(node, parts) {
@@ -633,8 +649,15 @@
     const type = node[0];
     switch (type) {
       case 'span': {
-        // ["span", {...}, ["span", {...}, "text"]]
-        for (let i = 1; i < node.length; i++) walkBlockChild(node[i], parts);
+        // ["span", {data-type:"text"}, ["span", {bold,strike,..., data-type:"leaf"}, "text"]]
+        const props = (node.length > 1 && typeof node[1] === 'object' && !Array.isArray(node[1])) ? node[1] : {};
+        if (props['data-type'] === 'leaf') {
+          // This is a leaf span — get text and apply formatting
+          const text = node[2] || '';
+          parts.push(getTextWithFormatting(node, text));
+        } else {
+          for (let i = 1; i < node.length; i++) walkBlockChild(node[i], parts);
+        }
         break;
       }
       case 'br': {

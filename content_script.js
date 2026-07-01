@@ -621,27 +621,27 @@
     return text.replace(INVISIBLE_CHARS, '');
   }
 
+  function escapeHtml(text) {
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   function getInlineFormatKey(seg) {
     return [
-      seg.href ? 'l' : '', // link presence is part of format identity
+      seg.href || '',     // include actual href so different links don't merge
       seg.strike ? 's' : '',
       seg.bold ? 'b' : '',
       seg.italic ? 'i' : '',
       seg.underline ? 'u' : '',
-    ].join('');
+    ].join('|');
   }
 
   function renderSegment(seg) {
-    // Returns markdown/HTML for one merged segment
     let out = seg.text;
-    const hasFmt = seg.strike || seg.bold || seg.italic || seg.underline;
 
     if (seg.href) {
       if (seg.strike) {
-        // Use HTML to avoid Markdown ~~ conflicting with autolink parsing
-        return '<s><a href="' + seg.href + '">' + out + '</a></s>';
+        return '<s><a href="' + escapeHtml(seg.href) + '">' + escapeHtml(out) + '</a></s>';
       }
-      // Wrap with Markdown link, apply other formatting around it
       out = '[' + out + '](' + seg.href + ')';
     }
 
@@ -675,23 +675,22 @@
     let currentHref = '';
     let imageIdx = 0;
 
+    function collectLeafText(n, out) {
+      if (typeof n === 'string') { out.push(n); return; }
+      if (!Array.isArray(n)) return;
+      for (let j = 1; j < n.length; j++) collectLeafText(n[j], out);
+    }
+
     function walkSegments(node) {
-      if (typeof node === 'string') { addText(node); return; }
-      if (!Array.isArray(node)) return;
+      if (typeof node === 'string' || !Array.isArray(node)) return;
       const type = node[0];
 
       if (type === 'span') {
         const props = (node.length > 1 && typeof node[1] === 'object' && !Array.isArray(node[1])) ? node[1] : {};
         if (props['data-type'] === 'leaf') {
-          // Leaf: collect all children as text, produce a segment
+          // Leaf: collect all children as flat text, then emit one segment
           const childParts = [];
-          for (let i = 2; i < node.length; i++) walkSegments(node[i]);
-          function walkSegmentsForLeaf(n) {
-            if (typeof n === 'string') { childParts.push(n); return; }
-            if (!Array.isArray(n)) return;
-            for (let j = 1; j < n.length; j++) walkSegmentsForLeaf(n[j]);
-          }
-          for (let i = 2; i < node.length; i++) walkSegmentsForLeaf(node[i]);
+          for (let i = 2; i < node.length; i++) collectLeafText(node[i], childParts);
           const text = stripInvisibleChars(childParts.join(''));
           if (text) {
             const seg = {

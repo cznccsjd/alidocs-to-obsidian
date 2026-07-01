@@ -18,16 +18,19 @@
 
 ## 安装
 
-### 前置要求
-- 在 Obsidian 中安装并运行 [Local REST API with MCP](https://github.com/coddingtonbear/obsidian-local-rest-api) 插件
-- Chrome 浏览器
+### 推荐方式：从 Releases 下载
+1. 前往 [Releases](https://github.com/cznccsjd/alidocs-to-obsidian/releases) 下载最新 `alidocs-to-obsidian-vX.X.X.zip`
+2. 解压到一个固定目录（扩展从此目录加载，请勿删除）
+3. 打开 Chrome → `chrome://extensions`
+4. 启用 **开发者模式**
+5. 点击 **加载已解压的扩展程序** → 选择解压后的文件夹
+6. 点击扩展图标 → ⚙️ 设置 → 填入 API Key
 
-### Chrome 扩展安装
-1. Clone 或下载本仓库
-2. 打开 Chrome → `chrome://extensions`
-3. 启用 **开发者模式**
-4. 点击 **加载已解压的扩展程序** → 选择本项目文件夹
-5. 打开扩展选项，填入 Obsidian Local REST API 密钥
+### 从源码安装
+```bash
+git clone https://github.com/cznccsjd/alidocs-to-obsidian.git
+```
+然后按上述步骤 3–6 操作。
 
 ### Obsidian 配置
 1. 安装 [Local REST API with MCP](https://github.com/coddingtonbear/obsidian-local-rest-api) 插件

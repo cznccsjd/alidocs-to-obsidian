@@ -20,11 +20,25 @@ Based on [memoricry88/obsidian-alidocs-clipper](https://github.com/memoricry88/o
 - Chrome browser
 
 ## Installation
-1. Clone or download this repo
-2. Open Chrome → `chrome://extensions`
-3. Enable **Developer mode**
-4. Click **Load unpacked** → select this folder
-5. Open the extension options and enter your Obsidian Local REST API key
+
+### Recommended: Download from Releases
+1. Go to [Releases](https://github.com/cznccsjd/alidocs-to-obsidian/releases) and download the latest `alidocs-to-obsidian-vX.X.X.zip`
+2. Unzip to a permanent folder (the extension loads from this folder, don't delete it)
+3. Open Chrome → `chrome://extensions`
+4. Enable **Developer mode**
+5. Click **Load unpacked** → select the unzipped folder
+6. Click the extension icon → ⚙️ Settings → enter your API Key
+
+### From Source
+```bash
+git clone https://github.com/cznccsjd/alidocs-to-obsidian.git
+```
+Then follow steps 3–6 above.
+
+### Obsidian Setup
+1. Install [Local REST API with MCP](https://github.com/coddingtonbear/obsidian-local-rest-api) in Obsidian
+2. Enable the plugin — the API Key appears in its settings
+3. Default port is `27123`, no changes needed
 
 ## Usage
 Navigate to any AliDocs / DingTalk document and click the extension icon to clip it to Obsidian.

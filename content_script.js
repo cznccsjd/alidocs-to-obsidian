@@ -617,48 +617,141 @@
 
   // ── Convert API body blocks to Markdown ──
 
-  function extractTextFromBlock(block) {
-    // block = ["h1"|"p"|..., props_or_skip, ...children]
-    // children are: ["span", {...}, ["span", {...}, "text"]] or ["img", {...}] or ["br", {...}] or ["tag", {...}]
-    const parts = [];
-    for (let i = (typeof block[1] === 'object' && !Array.isArray(block[1]) ? 2 : 1); i < block.length; i++) {
-      walkBlockChild(block[i], parts);
-    }
-    return stripInvisibleChars(parts.join(''));
+  function stripInvisibleChars(text) {
+    return text.replace(INVISIBLE_CHARS, '');
   }
 
-  function getInlineFormatKey(props) {
-    // Return a key that uniquely identifies the formatting combination
+  function getInlineFormatKey(seg) {
     return [
-      props.strike ? 's' : '',
-      props.bold ? 'b' : '',
-      props.italic ? 'i' : '',
-      props.underline ? 'u' : '',
+      seg.href ? 'l' : '', // link presence is part of format identity
+      seg.strike ? 's' : '',
+      seg.bold ? 'b' : '',
+      seg.italic ? 'i' : '',
+      seg.underline ? 'u' : '',
     ].join('');
+  }
+
+  function renderSegment(seg) {
+    // Returns markdown/HTML for one merged segment
+    let out = seg.text;
+    const hasFmt = seg.strike || seg.bold || seg.italic || seg.underline;
+
+    if (seg.href) {
+      if (seg.strike) {
+        // Use HTML to avoid Markdown ~~ conflicting with autolink parsing
+        return '<s><a href="' + seg.href + '">' + out + '</a></s>';
+      }
+      // Wrap with Markdown link, apply other formatting around it
+      out = '[' + out + '](' + seg.href + ')';
+    }
+
+    if (seg.strike) out = '~~' + out + '~~';
+    if (seg.bold) out = '**' + out + '**';
+    if (seg.italic) out = '*' + out + '*';
+    if (seg.underline) out = '<u>' + out + '</u>';
+    return out;
   }
 
   function applyInlineFormatting(props, text) {
     const cleaned = stripInvisibleChars(text);
     if (!cleaned) return '';
-    let out = cleaned;
-    if (props.strike) out = '~~' + out + '~~';
-    if (props.bold) out = '**' + out + '**';
-    if (props.italic) out = '*' + out + '*';
-    if (props.underline) out = '<u>' + out + '</u>';
-    return out;
+    return renderSegment({
+      text: cleaned,
+      href: '',
+      strike: !!props.strike,
+      bold: !!props.bold,
+      italic: !!props.italic,
+      underline: !!props.underline,
+    });
   }
 
-  function stripInvisibleChars(text) {
-    return text.replace(INVISIBLE_CHARS, '');
-  }
+  // ── Block-level inline segment collection (handles span -> a -> span) ──
 
-  function flushRuns(runs, parts) {
-    for (const run of runs) {
-      parts.push(applyInlineFormatting(run.props, run.text));
+  function collectBlockSegments(block, outSegments) {
+    // Walk all inline children of a block (p, h1-h6, td) and flatten into segments.
+    // `a` nodes' href is inherited by their inner leaf spans.
+    // Adjacent same-format segments (even across `a` boundaries) are merged.
+    const startIdx = (typeof block[1] === 'object' && !Array.isArray(block[1])) ? 2 : 1;
+    let currentHref = '';
+    let imageIdx = 0;
+
+    function walkSegments(node) {
+      if (typeof node === 'string') { addText(node); return; }
+      if (!Array.isArray(node)) return;
+      const type = node[0];
+
+      if (type === 'span') {
+        const props = (node.length > 1 && typeof node[1] === 'object' && !Array.isArray(node[1])) ? node[1] : {};
+        if (props['data-type'] === 'leaf') {
+          // Leaf: collect all children as text, produce a segment
+          const childParts = [];
+          for (let i = 2; i < node.length; i++) walkSegments(node[i]);
+          function walkSegmentsForLeaf(n) {
+            if (typeof n === 'string') { childParts.push(n); return; }
+            if (!Array.isArray(n)) return;
+            for (let j = 1; j < n.length; j++) walkSegmentsForLeaf(n[j]);
+          }
+          for (let i = 2; i < node.length; i++) walkSegmentsForLeaf(node[i]);
+          const text = stripInvisibleChars(childParts.join(''));
+          if (text) {
+            const seg = {
+              text,
+              href: currentHref,
+              strike: !!props.strike,
+              bold: !!props.bold,
+              italic: !!props.italic,
+              underline: !!props.underline,
+            };
+            // Merge with previous segment if format key matches
+            const fmtKey = getInlineFormatKey(seg);
+            if (outSegments.length > 0 &&
+                getInlineFormatKey(outSegments[outSegments.length - 1]) === fmtKey) {
+              outSegments[outSegments.length - 1].text += seg.text;
+            } else {
+              outSegments.push(seg);
+            }
+          }
+        } else {
+          // Non-leaf span — recurse
+          for (let i = 1; i < node.length; i++) walkSegments(node[i]);
+        }
+      } else if (type === 'a') {
+        // Link node: capture href, recurse children, restore
+        const savedHref = currentHref;
+        currentHref = (node[1] && node[1].href) || '';
+        for (let i = 1; i < node.length; i++) walkSegments(node[i]);
+        currentHref = savedHref;
+      } else if (type === 'br') {
+        outSegments.push({ text: '\n', href: '', strike: false, bold: false, italic: false, underline: false, _break: true });
+      } else if (type === 'img') {
+        let src = (node[1] && node[1].src) || '';
+        if (src && src.startsWith('/')) src = 'https://alidocs.dingtalk.com' + src;
+        const alt = (node[1] && node[1].name) || ('img_' + imageIdx++);
+        outSegments.push({ text: '![' + alt + '](' + src + ')', href: '', strike: false, bold: false, italic: false, underline: false, _img: true });
+      } else if (type === 'tag') {
+        // skip embedded doc tags
+      } else {
+        for (let i = 1; i < node.length; i++) walkSegments(node[i]);
+      }
     }
-    runs.length = 0; // clear in-place
+
+    for (let i = startIdx; i < block.length; i++) {
+      walkSegments(block[i]);
+    }
   }
 
+  function renderBlockInline(block) {
+    const segments = [];
+    collectBlockSegments(block, segments);
+    return segments.map(s => (s._break || s._img) ? s.text : renderSegment(s)).join('');
+  }
+
+  // Legacy: used by old DOM scroll path
+  function extractTextFromBlock(block) {
+    return renderBlockInline(block);
+  }
+
+  // Legacy: old DOM scroll walker
   function walkBlockChild(node, parts) {
     if (typeof node === 'string') { parts.push(node); return; }
     if (!Array.isArray(node)) return;
@@ -666,35 +759,7 @@
     switch (type) {
       case 'span': {
         const props = (node.length > 1 && typeof node[1] === 'object' && !Array.isArray(node[1])) ? node[1] : {};
-        if (props['data-type'] === 'text') {
-          // Parent text span: collect leaf children as runs, merge adjacent same-format,
-          // then render. Prevents ~~url_part1~~~~url_part2~~ for split URL spans.
-          const runs = [];
-          for (let i = 1; i < node.length; i++) {
-            if (Array.isArray(node[i]) && node[i][0] === 'span'
-                && node[i][1] && typeof node[i][1] === 'object' && node[i][1]['data-type'] === 'leaf') {
-              const leafProps = node[i][1];
-              const childParts = [];
-              for (let j = 2; j < node[i].length; j++) walkBlockChild(node[i][j], childParts);
-              const text = stripInvisibleChars(childParts.join(''));
-              if (text) {
-                const fmtKey = getInlineFormatKey(leafProps);
-                // Merge with previous run if format matches
-                if (runs.length > 0 && runs[runs.length - 1].fmtKey === fmtKey) {
-                  runs[runs.length - 1].text += text;
-                } else {
-                  runs.push({ text, props: leafProps, fmtKey });
-                }
-              }
-            } else {
-              // Non-leaf child (br, img, plain text, nested spans) — flush runs first
-              flushRuns(runs, parts);
-              walkBlockChild(node[i], parts);
-            }
-          }
-          flushRuns(runs, parts);
-        } else if (props['data-type'] === 'leaf') {
-          // Standalone leaf span (uncommon outside parent text span)
+        if (props['data-type'] === 'leaf') {
           const childParts = [];
           for (let i = 2; i < node.length; i++) walkBlockChild(node[i], childParts);
           parts.push(applyInlineFormatting(props, childParts.join('')));
@@ -703,21 +768,16 @@
         }
         break;
       }
-      case 'br': {
-        parts.push('\n');
-        break;
-      }
+      case 'br': { parts.push('\n'); break; }
       case 'img': {
         let src = (node[1] && node[1].src) || '';
         if (src && src.startsWith('/')) src = 'https://alidocs.dingtalk.com' + src;
         const alt = (node[1] && node[1].name) || 'image';
-        if (src) parts.push(`![${alt}](${src})`);
+        if (src) parts.push('![' + alt + '](' + src + ')');
         break;
       }
-      case 'tag': break; // skip embedded doc tags (render as empty)
-      default: {
-        for (let i = 1; i < node.length; i++) walkBlockChild(node[i], parts);
-      }
+      case 'tag': break;
+      default: { for (let i = 1; i < node.length; i++) walkBlockChild(node[i], parts); }
     }
   }
 
